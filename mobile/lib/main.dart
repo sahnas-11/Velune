@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'core/theme.dart';
+import 'screens/home_hub_screen.dart';
+
+// Module 4: HR Corporate
 import 'state/hr_state.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/co2_report_screen.dart';
@@ -8,7 +11,7 @@ import 'screens/statistics_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/incentives_screen.dart';
 
-// Booking Feature
+// Module 2: Booking Feature
 import 'features/booking/state/booking_state.dart';
 import 'features/booking/screens/booking_confirmation_screen.dart';
 import 'features/booking/screens/live_pickup_screen.dart';
@@ -16,7 +19,7 @@ import 'features/booking/screens/active_trip_screen.dart';
 import 'features/booking/screens/fare_settlement_screen.dart';
 import 'features/booking/screens/payment_receipt_screen.dart';
 
-// Emergency Feature
+// Module 3: Emergency Feature
 import 'features/emergency/state/emergency_state.dart';
 import 'features/emergency/models/emergency_models.dart';
 import 'features/emergency/screens/active_ride_screen.dart';
@@ -52,173 +55,353 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
-  // Active Module: 'hr', 'booking', 'emergency_commuter', 'emergency_mechanic'
-  String _activeModule = 'hr';
-  int _hrTab = 0;
+  // Main Tab: 0 = Home Hub, 1 = Booking (Module 2), 2 = Emergency (Module 3), 3 = HR Corporate (Module 4)
+  int _currentMainTab = 0;
+
+  // Sub-steps within each module
   int _bookingStep = 0;
+  int _emergencyMode = 0; // 0 = Commuter, 1 = Mechanic
   int _emergencyCommuterStep = 0;
   int _emergencyMechanicStep = 0;
   EmergencyIncident? _selectedIncident;
+  int _hrTab = 0;
 
+  // State instances
   final HrState _hrState = HrState();
   final BookingState _bookingState = BookingState();
   final EmergencyState _emergencyState = EmergencyState();
+
+  void _navigateToModule(int mainTab, {int? subIndex}) {
+    setState(() {
+      _currentMainTab = mainTab;
+      if (mainTab == 1 && subIndex != null) {
+        _bookingStep = subIndex;
+      } else if (mainTab == 2 && subIndex != null) {
+        if (subIndex >= 3) {
+          _emergencyMode = 1;
+          _emergencyMechanicStep = subIndex - 3;
+        } else {
+          _emergencyMode = 0;
+          _emergencyCommuterStep = subIndex;
+        }
+      } else if (mainTab == 3 && subIndex != null) {
+        _hrTab = subIndex;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     Widget activeContent;
 
-    if (_activeModule == 'hr') {
-      final List<Widget> hrScreens = [
-        DashboardScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
-        Co2ReportScreen(state: _hrState),
-        ParkingScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
-        StatisticsScreen(state: _hrState),
-        ReportsScreen(state: _hrState),
-        IncentivesScreen(state: _hrState),
-      ];
-      activeContent = Scaffold(
-        drawer: _buildDrawer(),
-        body: hrScreens[_hrTab],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _hrTab > 4 ? 4 : _hrTab,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: VeluneColors.skyBlue,
-          height: 65,
-          onDestinationSelected: (idx) => setState(() => _hrTab = idx),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard, color: VeluneColors.primaryNavy), label: 'Dashboard'),
-            NavigationDestination(icon: Icon(Icons.eco_outlined), selectedIcon: Icon(Icons.eco, color: VeluneColors.success), label: 'CO2'),
-            NavigationDestination(icon: Icon(Icons.local_parking_outlined), selectedIcon: Icon(Icons.local_parking, color: VeluneColors.accentBlue), label: 'Parking'),
-            NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart, color: Colors.deepPurple), label: 'Stats'),
-            NavigationDestination(icon: Icon(Icons.description_outlined), selectedIcon: Icon(Icons.description, color: VeluneColors.warning), label: 'Reports'),
-          ],
-        ),
-      );
-    } else if (_activeModule == 'booking') {
-      // 5 Booking Screens
-      final List<Widget> bookingScreens = [
-        BookingConfirmationScreen(
-          state: _bookingState,
-          onProceedToPickup: () => setState(() => _bookingStep = 1),
-        ),
-        LivePickupScreen(
-          state: _bookingState,
-          onBoardedRide: () => setState(() => _bookingStep = 2),
-        ),
-        ActiveTripScreen(
-          state: _bookingState,
-          onGoToSettlement: () => setState(() => _bookingStep = 3),
-          onGoToEmergency: () => setState(() {
-            _activeModule = 'emergency_commuter';
-            _emergencyCommuterStep = 1; // Direct jump to breakdown!
-          }),
-        ),
-        FareSettlementScreen(
-          state: _bookingState,
-          onPaymentApproved: () => setState(() => _bookingStep = 4),
-        ),
-        PaymentReceiptScreen(
-          state: _bookingState,
-          onReturnToHub: () => setState(() => _bookingStep = 0),
-        ),
-      ];
-      activeContent = Scaffold(
-        drawer: _buildDrawer(),
-        body: bookingScreens[_bookingStep],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _bookingStep,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: VeluneColors.skyBlue,
-          height: 65,
-          onDestinationSelected: (idx) => setState(() => _bookingStep = idx),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.check_circle_outline), selectedIcon: Icon(Icons.check_circle, color: VeluneColors.primaryNavy), label: 'Confirm'),
-            NavigationDestination(icon: Icon(Icons.timer_outlined), selectedIcon: Icon(Icons.timer, color: VeluneColors.accentBlue), label: 'Pickup'),
-            NavigationDestination(icon: Icon(Icons.navigation_outlined), selectedIcon: Icon(Icons.navigation, color: VeluneColors.success), label: 'Trip'),
-            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long, color: VeluneColors.warning), label: 'Split'),
-            NavigationDestination(icon: Icon(Icons.verified_outlined), selectedIcon: Icon(Icons.verified, color: Colors.purple), label: 'Receipt'),
-          ],
-        ),
-      );
-    } else if (_activeModule == 'emergency_commuter') {
-      // 3 Commuter Emergency Screens
-      final List<Widget> commuterScreens = [
-        ActiveRideScreen(
-          state: _emergencyState,
-          onRequestEmergency: () => setState(() => _emergencyCommuterStep = 1),
-        ),
-        EmergencyBreakdownScreen(
-          state: _emergencyState,
-          onMechanicRequested: () => setState(() => _emergencyCommuterStep = 2),
-        ),
-        HelpRequestedScreen(
-          state: _emergencyState,
-          onIncidentClosed: () => setState(() => _emergencyCommuterStep = 0),
-        ),
-      ];
-      activeContent = Scaffold(
-        drawer: _buildDrawer(),
-        body: commuterScreens[_emergencyCommuterStep],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _emergencyCommuterStep,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: VeluneColors.dangerBg,
-          height: 65,
-          onDestinationSelected: (idx) => setState(() => _emergencyCommuterStep = idx),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.directions_car_outlined), selectedIcon: Icon(Icons.directions_car, color: VeluneColors.primaryNavy), label: 'Active Ride'),
-            NavigationDestination(icon: Icon(Icons.warning_amber_rounded), selectedIcon: Icon(Icons.warning, color: VeluneColors.danger), label: 'Breakdown'),
-            NavigationDestination(icon: Icon(Icons.support_agent_outlined), selectedIcon: Icon(Icons.support_agent, color: VeluneColors.success), label: 'Dispatched'),
-          ],
-        ),
-      );
-    } else {
-      // 3 Mechanic Screens
-      final inc = _selectedIncident ?? _emergencyState.queue.first;
-      final List<Widget> mechanicScreens = [
-        MechanicQueueScreen(
-          state: _emergencyState,
-          onInspectIncident: (item) {
-            setState(() {
-              _selectedIncident = item;
-              _emergencyMechanicStep = 1;
-            });
-          },
-        ),
-        MechanicRequestDetailsScreen(
-          state: _emergencyState,
-          incident: inc,
-          onAccepted: () => setState(() => _emergencyMechanicStep = 2),
-        ),
-        DispatchStatusScreen(
-          state: _emergencyState,
-          onResolved: () => setState(() => _emergencyMechanicStep = 0),
-        ),
-      ];
-      activeContent = Scaffold(
-        drawer: _buildDrawer(),
-        body: mechanicScreens[_emergencyMechanicStep],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _emergencyMechanicStep,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: VeluneColors.skyBlue,
-          height: 65,
-          onDestinationSelected: (idx) => setState(() => _emergencyMechanicStep = idx),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.format_list_bulleted), selectedIcon: Icon(Icons.format_list_bulleted, color: VeluneColors.primaryNavy), label: 'Job Queue'),
-            NavigationDestination(icon: Icon(Icons.handyman_outlined), selectedIcon: Icon(Icons.handyman, color: VeluneColors.accentBlue), label: 'Request'),
-            NavigationDestination(icon: Icon(Icons.speed), selectedIcon: Icon(Icons.speed, color: VeluneColors.success), label: 'Diagnostic'),
-          ],
-        ),
-      );
+    switch (_currentMainTab) {
+      case 0:
+        // 🏠 Unified Home Hub
+        activeContent = HomeHubScreen(
+          onNavigateToModule: _navigateToModule,
+        );
+        break;
+
+      case 1:
+        // 🚗 Module 2: Carpool Booking & Fare Splitting (Tissera)
+        activeContent = _buildBookingModuleView();
+        break;
+
+      case 2:
+        // 🚨 Module 3: Emergency Breakdown & Fleet Dispatch (Jayathilaka)
+        activeContent = _buildEmergencyModuleView();
+        break;
+
+      case 3:
+      default:
+        // 🏢 Module 4: HR Corporate & System Integration (Amanda)
+        activeContent = _buildHrModuleView();
+        break;
     }
 
-    return activeContent;
+    return Scaffold(
+      drawer: _buildDrawer(),
+      body: SafeArea(child: activeContent),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentMainTab,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: VeluneColors.skyBlue,
+        height: 68,
+        onDestinationSelected: (idx) => setState(() => _currentMainTab = idx),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: VeluneColors.primaryNavy),
+            label: 'Home Hub',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.directions_car_outlined),
+            selectedIcon: Icon(Icons.directions_car, color: VeluneColors.accentBlue),
+            label: 'Booking',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.emergency_outlined),
+            selectedIcon: Icon(Icons.emergency, color: VeluneColors.danger),
+            label: 'Emergency',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.business_outlined),
+            selectedIcon: Icon(Icons.business, color: VeluneColors.primaryNavy),
+            label: 'HR Portal',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // Module 2 View: Booking & Fare Settlement
+  // ==========================================
+  Widget _buildBookingModuleView() {
+    final List<Widget> bookingScreens = [
+      BookingConfirmationScreen(
+        state: _bookingState,
+        onProceedToPickup: () => setState(() => _bookingStep = 1),
+      ),
+      LivePickupScreen(
+        state: _bookingState,
+        onBoardedRide: () => setState(() => _bookingStep = 2),
+      ),
+      ActiveTripScreen(
+        state: _bookingState,
+        onGoToSettlement: () => setState(() => _bookingStep = 3),
+        onGoToEmergency: () => setState(() {
+          _currentMainTab = 2;
+          _emergencyMode = 0;
+          _emergencyCommuterStep = 1; // Direct jump to breakdown!
+        }),
+      ),
+      FareSettlementScreen(
+        state: _bookingState,
+        onPaymentApproved: () => setState(() => _bookingStep = 4),
+      ),
+      PaymentReceiptScreen(
+        state: _bookingState,
+        onReturnToHub: () => setState(() => _currentMainTab = 0),
+      ),
+    ];
+
+    final stepLabels = ['1. Confirm', '2. Pickup (3m)', '3. Active Trip', '4. Fare Split', '5. Receipt'];
+
+    return Column(
+      children: [
+        // Sub-navigation step selector
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(stepLabels.length, (idx) {
+                final isSelected = _bookingStep == idx;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(stepLabels[idx]),
+                    selected: isSelected,
+                    selectedColor: VeluneColors.skyBlue,
+                    backgroundColor: VeluneColors.background,
+                    labelStyle: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? VeluneColors.accentBlue : VeluneColors.textSecondary,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: isSelected ? VeluneColors.accentBlue : VeluneColors.border),
+                    ),
+                    onSelected: (_) => setState(() => _bookingStep = idx),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        Expanded(child: bookingScreens[_bookingStep]),
+      ],
+    );
+  }
+
+  // ==========================================
+  // Module 3 View: Emergency & Fleet Dispatch
+  // ==========================================
+  Widget _buildEmergencyModuleView() {
+    final inc = _selectedIncident ?? _emergencyState.queue.first;
+
+    final List<Widget> commuterScreens = [
+      ActiveRideScreen(
+        state: _emergencyState,
+        onRequestEmergency: () => setState(() => _emergencyCommuterStep = 1),
+      ),
+      EmergencyBreakdownScreen(
+        state: _emergencyState,
+        onMechanicRequested: () => setState(() => _emergencyCommuterStep = 2),
+      ),
+      HelpRequestedScreen(
+        state: _emergencyState,
+        onIncidentClosed: () => setState(() => _emergencyCommuterStep = 0),
+      ),
+    ];
+
+    final List<Widget> mechanicScreens = [
+      MechanicQueueScreen(
+        state: _emergencyState,
+        onInspectIncident: (item) {
+          setState(() {
+            _selectedIncident = item;
+            _emergencyMechanicStep = 1;
+          });
+        },
+      ),
+      MechanicRequestDetailsScreen(
+        state: _emergencyState,
+        incident: inc,
+        onAccepted: () => setState(() => _emergencyMechanicStep = 2),
+      ),
+      DispatchStatusScreen(
+        state: _emergencyState,
+        onResolved: () => setState(() => _emergencyMechanicStep = 0),
+      ),
+    ];
+
+    final commuterLabels = ['1. Active Ride', '2. Breakdown Alert', '3. Dispatched'];
+    final mechanicLabels = ['1. Job Queue', '2. Triage Details', '3. Diagnostics & Resolve'];
+
+    return Column(
+      children: [
+        // Mode switch: Commuter vs Mechanic
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 0,
+                      label: Text('Commuter Flow', style: TextStyle(fontSize: 11)),
+                      icon: Icon(Icons.person_pin_circle_outlined, size: 16),
+                    ),
+                    ButtonSegment(
+                      value: 1,
+                      label: Text('Mechanic Fleet', style: TextStyle(fontSize: 11)),
+                      icon: Icon(Icons.build_outlined, size: 16),
+                    ),
+                  ],
+                  selected: {_emergencyMode},
+                  onSelectionChanged: (val) => setState(() => _emergencyMode = val.first),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Sub-step chips
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (idx) {
+              final isCommuter = _emergencyMode == 0;
+              final isSelected = isCommuter ? _emergencyCommuterStep == idx : _emergencyMechanicStep == idx;
+              final label = isCommuter ? commuterLabels[idx] : mechanicLabels[idx];
+              final activeColor = isCommuter ? VeluneColors.danger : VeluneColors.primaryNavy;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                  label: Text(label),
+                  selected: isSelected,
+                  selectedColor: isCommuter ? VeluneColors.dangerBg : VeluneColors.skyBlue,
+                  backgroundColor: VeluneColors.background,
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? activeColor : VeluneColors.textSecondary,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: isSelected ? activeColor : VeluneColors.border),
+                  ),
+                  onSelected: (_) => setState(() {
+                    if (isCommuter) {
+                      _emergencyCommuterStep = idx;
+                    } else {
+                      _emergencyMechanicStep = idx;
+                    }
+                  }),
+                ),
+              );
+            }),
+          ),
+        ),
+
+        Expanded(
+          child: _emergencyMode == 0 ? commuterScreens[_emergencyCommuterStep] : mechanicScreens[_emergencyMechanicStep],
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // Module 4 View: HR & Corporate Portal
+  // ==========================================
+  Widget _buildHrModuleView() {
+    final List<Widget> hrScreens = [
+      DashboardScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
+      Co2ReportScreen(state: _hrState),
+      ParkingScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
+      StatisticsScreen(state: _hrState),
+      ReportsScreen(state: _hrState),
+      IncentivesScreen(state: _hrState),
+    ];
+
+    final hrLabels = ['Dashboard', 'CO2 Logs', 'Parking Deck B', 'Analytics', 'ESG Reports', 'Rewards'];
+
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(hrLabels.length, (idx) {
+                final isSelected = _hrTab == idx;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(hrLabels[idx]),
+                    selected: isSelected,
+                    selectedColor: VeluneColors.skyBlue,
+                    backgroundColor: VeluneColors.background,
+                    labelStyle: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected ? VeluneColors.primaryNavy : VeluneColors.textSecondary,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: isSelected ? VeluneColors.primaryNavy : VeluneColors.border),
+                    ),
+                    onSelected: (_) => setState(() => _hrTab = idx),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        Expanded(child: hrScreens[_hrTab]),
+      ],
+    );
   }
 
   Widget _buildDrawer() {
@@ -229,7 +412,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(gradient: VeluneColors.navyGradient),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -237,103 +420,109 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   radius: 24,
                   backgroundColor: Colors.white,
                   child: Text(
-                    _activeModule == 'hr' ? 'AJ' : (_activeModule == 'emergency_mechanic' ? 'NS' : 'CU'),
-                    style: const TextStyle(color: VeluneColors.primaryNavy, fontWeight: FontWeight.bold, fontSize: 16),
+                    'V',
+                    style: TextStyle(color: VeluneColors.primaryNavy, fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
-                  _activeModule == 'hr'
-                      ? 'Amanda Jayawardena (HR)'
-                      : (_activeModule == 'emergency_mechanic' ? 'Nalin Silva (Roadside Tech)' : 'Commuter Rider Hub'),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  'Velune Corporate Platform',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 Text(
-                  _activeModule == 'hr'
-                      ? 'Head of HR & Corporate Facilities'
-                      : (_activeModule == 'emergency_mechanic' ? 'Fleet Mobile Patrol Unit #04' : 'Verified Office Commuter'),
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  'SLIIT IT3060 • Milestone 03 • Group WE_162',
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
           ),
 
-          // Module Switcher Header
+          // Platform Sections
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('SELECT PLATFORM MODULE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted, letterSpacing: 1.1)),
+            child: Text('NAVIGATION MENU', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted, letterSpacing: 1.1)),
           ),
 
-          // 1. Module 4: HR / Corporate
           ListTile(
-            leading: const Icon(Icons.business, color: VeluneColors.primaryNavy),
-            title: const Text('1. HR / Corporate Module', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23555112 • 6 Dedicated Screens', style: TextStyle(fontSize: 10)),
-            selected: _activeModule == 'hr',
+            leading: const Icon(Icons.home, color: VeluneColors.primaryNavy),
+            title: const Text('Home Hub', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('Unified Portal & System Overview', style: TextStyle(fontSize: 10)),
+            selected: _currentMainTab == 0,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
-              setState(() {
-                _activeModule = 'hr';
-                _hrTab = 0;
-              });
+              setState(() => _currentMainTab = 0);
               Navigator.pop(context);
             },
           ),
 
-          // 2. Module 2: Booking & Fare Settlement
           ListTile(
             leading: const Icon(Icons.directions_car, color: VeluneColors.accentBlue),
-            title: const Text('2. Booking & Fare Splitting', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            title: const Text('Module 2: Carpool Booking & Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             subtitle: const Text('IT23555808 (Tissera) • 5 Screens', style: TextStyle(fontSize: 10)),
-            selected: _activeModule == 'booking',
+            selected: _currentMainTab == 1,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
-              setState(() {
-                _activeModule = 'booking';
-                _bookingStep = 0;
-              });
+              setState(() => _currentMainTab = 1);
               Navigator.pop(context);
             },
           ),
 
-          // 3. Module 3: Emergency - Commuter View
           ListTile(
             leading: const Icon(Icons.emergency, color: VeluneColors.danger),
-            title: const Text('3. Emergency Breakdown (Commuter)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23829824 • Active Ride & Breakdown', style: TextStyle(fontSize: 10)),
-            selected: _activeModule == 'emergency_commuter',
-            selectedTileColor: VeluneColors.dangerBg,
+            title: const Text('Module 3: Emergency & Dispatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23829824 (Jayathilaka) • 6 Screens', style: TextStyle(fontSize: 10)),
+            selected: _currentMainTab == 2,
+            selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
-              setState(() {
-                _activeModule = 'emergency_commuter';
-                _emergencyCommuterStep = 0;
-              });
+              setState(() => _currentMainTab = 2);
               Navigator.pop(context);
             },
           ),
 
-          // 4. Module 3: Emergency - Mechanic View
           ListTile(
-            leading: const Icon(Icons.handyman, color: Colors.orange),
-            title: const Text('4. Mechanic Fleet Dispatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23829824 • Queue & Diagnostics', style: TextStyle(fontSize: 10)),
-            selected: _activeModule == 'emergency_mechanic',
+            leading: const Icon(Icons.business, color: VeluneColors.primaryNavy),
+            title: const Text('Module 4: HR Corporate & ESG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23555112 (Amanda) • 6 Screens', style: TextStyle(fontSize: 10)),
+            selected: _currentMainTab == 3,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
-              setState(() {
-                _activeModule = 'emergency_mechanic';
-                _emergencyMechanicStep = 0;
-              });
+              setState(() => _currentMainTab = 3);
               Navigator.pop(context);
             },
           ),
 
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'SLIIT IT3060 HCI - Milestone 03\nVelune Carpool Monorepo\nAll 3 teammate modules integrated.',
-              style: TextStyle(fontSize: 11, color: VeluneColors.textMuted, height: 1.4),
+
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('PROJECT REPOSITORY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted)),
+                const SizedBox(height: 4),
+                const Text('github.com/sahnas-11/Velune', style: TextStyle(fontSize: 11, color: VeluneColors.accentBlue, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: VeluneColors.successBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: VeluneColors.success.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: VeluneColors.success, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '17 Screens Active • SQLite / MySQL Synchronized',
+                          style: TextStyle(fontSize: 10, color: VeluneColors.success, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
