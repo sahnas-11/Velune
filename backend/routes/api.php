@@ -5,10 +5,52 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\EmergencyController;
 use App\Http\Controllers\HrCorporateController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DiscoveryRidesController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+// ==========================================
+// === Auth & Corporate Verification (Module 1) ===
+// ==========================================
+Route::prefix('auth')->group(function () {
+    Route::post('/request-otp', [AuthController::class, 'requestOtp']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+    Route::post('/government-id', [AuthController::class, 'submitGovernmentId']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+});
+
+Route::post('/login', [AuthController::class, 'login']);
+
+// ==========================================
+// === Commuter Ride Discovery (Module 1) ===
+// ==========================================
+Route::get('/locations', [DiscoveryRidesController::class, 'getLocations']);
+Route::get('/home', [DiscoveryRidesController::class, 'getHomeFeed']);
+Route::get('/rides/search', [DiscoveryRidesController::class, 'searchRides']);
+Route::get('/rides/{id}', [DiscoveryRidesController::class, 'getRideDetails']);
+Route::post('/rides/{id}/bookmark', [DiscoveryRidesController::class, 'bookmarkRide']);
+Route::delete('/rides/{id}/bookmark', [DiscoveryRidesController::class, 'unbookmarkRide']);
+Route::post('/rides/{id}/report', [DiscoveryRidesController::class, 'reportRide']);
+Route::put('/rides/{id}/report', [DiscoveryRidesController::class, 'updateReport']);
+Route::delete('/rides/{id}/report', [DiscoveryRidesController::class, 'deleteReport']);
+
+Route::get('/saved-searches', [DiscoveryRidesController::class, 'getSavedSearches']);
+Route::post('/saved-searches', [DiscoveryRidesController::class, 'createSavedSearch']);
+Route::put('/saved-searches/{id}', [DiscoveryRidesController::class, 'updateSavedSearch']);
+Route::delete('/saved-searches/{id}', [DiscoveryRidesController::class, 'deleteSavedSearch']);
+
+Route::get('/saved-routes', [DiscoveryRidesController::class, 'getSavedRoutes']);
+Route::post('/saved-routes', [DiscoveryRidesController::class, 'createSavedRoute']);
+Route::delete('/saved-routes/{id}', [DiscoveryRidesController::class, 'deleteSavedRoute']);
+
+Route::delete('/notices/{id}', [DiscoveryRidesController::class, 'dismissNotice']);
+Route::put('/notifications/read', [DiscoveryRidesController::class, 'markNotificationsRead']);
 
 // ==========================================
 // === Booking, Live Tracking & Fare Module ===

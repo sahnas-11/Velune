@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'core/theme.dart';
-import 'screens/home_hub_screen.dart';
 
-// Module 4: HR Corporate
-import 'state/hr_state.dart';
-import 'screens/dashboard_screen.dart';
-import 'screens/co2_report_screen.dart';
-import 'screens/parking_screen.dart';
-import 'screens/statistics_screen.dart';
-import 'screens/reports_screen.dart';
-import 'screens/incentives_screen.dart';
+// Module 1: Auth & Verification (Karunarathna IT23820050)
+import 'features/auth/state/auth_state.dart';
+import 'features/auth/screens/splash_screen.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/corporate_verification_screen.dart';
+import 'features/auth/screens/government_id_screen.dart';
+import 'features/auth/screens/profile_screen.dart';
 
-// Module 2: Booking Feature
+// Module 1: Ride Discovery (Karunarathna IT23820050)
+import 'features/discovery/state/discovery_state.dart';
+import 'features/discovery/screens/commuter_home_screen.dart';
+import 'features/discovery/screens/find_ride_screen.dart';
+import 'features/discovery/screens/available_rides_screen.dart';
+import 'features/discovery/screens/ride_details_screen.dart';
+
+// Module 2: Booking & Fare Settlement (Tissera IT23555808)
 import 'features/booking/state/booking_state.dart';
 import 'features/booking/screens/booking_confirmation_screen.dart';
 import 'features/booking/screens/live_pickup_screen.dart';
@@ -19,7 +24,7 @@ import 'features/booking/screens/active_trip_screen.dart';
 import 'features/booking/screens/fare_settlement_screen.dart';
 import 'features/booking/screens/payment_receipt_screen.dart';
 
-// Module 3: Emergency Feature
+// Module 3: Emergency & Fleet Dispatch (Jayathilaka IT23829824)
 import 'features/emergency/state/emergency_state.dart';
 import 'features/emergency/models/emergency_models.dart';
 import 'features/emergency/screens/active_ride_screen.dart';
@@ -28,6 +33,15 @@ import 'features/emergency/screens/help_requested_screen.dart';
 import 'features/emergency/screens/mechanic_queue_screen.dart';
 import 'features/emergency/screens/mechanic_request_details_screen.dart';
 import 'features/emergency/screens/dispatch_status_screen.dart';
+
+// Module 4: HR Corporate & System Integration (Amanda IT23555112)
+import 'state/hr_state.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/co2_report_screen.dart';
+import 'screens/parking_screen.dart';
+import 'screens/statistics_screen.dart';
+import 'screens/reports_screen.dart';
+import 'screens/incentives_screen.dart';
 
 void main() {
   runApp(const VeluneApp());
@@ -55,66 +69,156 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
-  // Main Tab: 0 = Home Hub, 1 = Booking (Module 2), 2 = Emergency (Module 3), 3 = HR Corporate (Module 4)
-  int _currentMainTab = 0;
+  // Navigation Flow State
+  bool _showSplash = true;
+  bool _inOtpFlow = false;
+  int _currentMainTab = 0; // 0=Home, 1=Discovery, 2=Booking, 3=Emergency, 4=HR
 
-  // Sub-steps within each module
+  // Sub-steps within Discovery (Module 1)
+  int _discoveryStep = 0; // 0=Find Ride, 1=Available Rides, 2=Ride Details
+  int _selectedDiscoveryRideId = 1;
+
+  // Sub-steps within Booking (Module 2)
   int _bookingStep = 0;
-  int _emergencyMode = 0; // 0 = Commuter, 1 = Mechanic
+
+  // Sub-steps within Emergency (Module 3)
+  int _emergencyMode = 0; // 0=Commuter, 1=Mechanic
   int _emergencyCommuterStep = 0;
   int _emergencyMechanicStep = 0;
   EmergencyIncident? _selectedIncident;
+
+  // Sub-steps within HR (Module 4)
   int _hrTab = 0;
 
-  // State instances
-  final HrState _hrState = HrState();
+  // Feature State instances
+  final AuthState _authState = AuthState();
+  final DiscoveryState _discoveryState = DiscoveryState();
   final BookingState _bookingState = BookingState();
   final EmergencyState _emergencyState = EmergencyState();
+  final HrState _hrState = HrState();
 
-  void _navigateToModule(int mainTab, {int? subIndex}) {
+  @override
+  void initState() {
+    super.initState();
+    _authState.addListener(_onAuthChange);
+  }
+
+  @override
+  void dispose() {
+    _authState.removeListener(_onAuthChange);
+    super.dispose();
+  }
+
+  void _onAuthChange() {
+    setState(() {});
+  }
+
+  // Role-based landing route
+  void _applyRoleHomeRoute(String role) {
     setState(() {
-      _currentMainTab = mainTab;
-      if (mainTab == 1 && subIndex != null) {
-        _bookingStep = subIndex;
-      } else if (mainTab == 2 && subIndex != null) {
-        if (subIndex >= 3) {
-          _emergencyMode = 1;
-          _emergencyMechanicStep = subIndex - 3;
-        } else {
-          _emergencyMode = 0;
-          _emergencyCommuterStep = subIndex;
-        }
-      } else if (mainTab == 3 && subIndex != null) {
-        _hrTab = subIndex;
+      _inOtpFlow = false;
+      if (role == 'hr_manager') {
+        _currentMainTab = 4; // HR Corporate
+        _hrTab = 0;
+      } else if (role == 'mechanic') {
+        _currentMainTab = 3; // Emergency Mechanic
+        _emergencyMode = 1;
+        _emergencyMechanicStep = 0;
+      } else {
+        _currentMainTab = 0; // Commuter Home
+        _discoveryStep = 0;
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1. Splash Screen
+    if (_showSplash) {
+      return AnimatedSplashScreen(
+        onAnimationComplete: () {
+          setState(() => _showSplash = false);
+        },
+      );
+    }
+
+    // 2. Authentication Flow
+    if (!_authState.isAuthenticated) {
+      if (_inOtpFlow) {
+        return CorporateVerificationScreen(
+          state: _authState,
+          onBackToLogin: () => setState(() => _inOtpFlow = false),
+          onVerified: () {
+            final role = _authState.currentUser?.role ?? 'commuter';
+            _applyRoleHomeRoute(role);
+          },
+          onOpenGovernmentId: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GovernmentIdScreen(
+                  state: _authState,
+                  onCompleted: () => Navigator.pop(context),
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      return LoginScreen(
+        state: _authState,
+        onContinueToOtp: () => setState(() => _inOtpFlow = true),
+        onDirectRoleLogin: (role) {
+          _authState.loginAsRole(role);
+          _applyRoleHomeRoute(role);
+        },
+      );
+    }
+
+    // 3. Authenticated App Experience
     Widget activeContent;
 
     switch (_currentMainTab) {
       case 0:
-        // 🏠 Unified Home Hub
-        activeContent = HomeHubScreen(
-          onNavigateToModule: _navigateToModule,
+        // 🏠 Commuter Home (Module 1, HF-03)
+        activeContent = CommuterHomeScreen(
+          state: _discoveryState,
+          userName: _authState.currentUser?.name ?? 'Jay',
+          onFindRidePressed: () {
+            setState(() {
+              _currentMainTab = 1;
+              _discoveryStep = 1; // Direct jump to available rides!
+            });
+          },
+          onRideSelected: (rideId) {
+            setState(() {
+              _currentMainTab = 1;
+              _selectedDiscoveryRideId = rideId;
+              _discoveryStep = 2; // Direct jump to ride details!
+            });
+          },
         );
         break;
 
       case 1:
-        // 🚗 Module 2: Carpool Booking & Fare Splitting (Tissera)
-        activeContent = _buildBookingModuleView();
+        // 🔍 Commuter Ride Discovery (Module 1: Karunarathna)
+        activeContent = _buildDiscoveryModuleView();
         break;
 
       case 2:
-        // 🚨 Module 3: Emergency Breakdown & Fleet Dispatch (Jayathilaka)
-        activeContent = _buildEmergencyModuleView();
+        // 🚗 Carpool Booking & Fare Settlement (Module 2: Tissera)
+        activeContent = _buildBookingModuleView();
         break;
 
       case 3:
+        // 🚨 Emergency Breakdown & Fleet Dispatch (Module 3: Jayathilaka)
+        activeContent = _buildEmergencyModuleView();
+        break;
+
+      case 4:
       default:
-        // 🏢 Module 4: HR Corporate & System Integration (Amanda)
+        // 🏢 HR Corporate & System Integration (Module 4: Amanda)
         activeContent = _buildHrModuleView();
         break;
     }
@@ -133,7 +237,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home, color: VeluneColors.primaryNavy),
-            label: 'Home Hub',
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search, color: VeluneColors.accentBlue),
+            label: 'Rides',
           ),
           NavigationDestination(
             icon: Icon(Icons.directions_car_outlined),
@@ -156,6 +265,76 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   // ==========================================
+  // Module 1 View: Ride Discovery (Karunarathna)
+  // ==========================================
+  Widget _buildDiscoveryModuleView() {
+    final List<Widget> screens = [
+      FindRideScreen(
+        state: _discoveryState,
+        onBack: () => setState(() => _currentMainTab = 0),
+        onSearchSubmitted: () => setState(() => _discoveryStep = 1),
+      ),
+      AvailableRidesScreen(
+        state: _discoveryState,
+        onBack: () => setState(() => _discoveryStep = 0),
+        onViewRide: (rideId) => setState(() {
+          _selectedDiscoveryRideId = rideId;
+          _discoveryStep = 2;
+        }),
+      ),
+      RideDetailsScreen(
+        state: _discoveryState,
+        rideId: _selectedDiscoveryRideId,
+        onBack: () => setState(() => _discoveryStep = 1),
+        onContinueToBook: (rideId) {
+          // Seamless handoff from Module 1 (Discovery) to Module 2 (Booking)!
+          setState(() {
+            _currentMainTab = 2;
+            _bookingStep = 0; // Booking confirmation screen
+          });
+        },
+      ),
+    ];
+
+    final labels = ['1. Find a Ride', '2. Available Rides', '3. Ride Details'];
+
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(labels.length, (idx) {
+              final isSelected = _discoveryStep == idx;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                  label: Text(labels[idx]),
+                  selected: isSelected,
+                  selectedColor: VeluneColors.skyBlue,
+                  backgroundColor: VeluneColors.background,
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? VeluneColors.accentBlue : VeluneColors.textSecondary,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: isSelected ? VeluneColors.accentBlue : VeluneColors.border),
+                  ),
+                  onSelected: (_) => setState(() => _discoveryStep = idx),
+                ),
+              );
+            }),
+          ),
+        ),
+        Expanded(child: screens[_discoveryStep]),
+      ],
+    );
+  }
+
+  // ==========================================
   // Module 2 View: Booking & Fare Settlement
   // ==========================================
   Widget _buildBookingModuleView() {
@@ -172,7 +351,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         state: _bookingState,
         onGoToSettlement: () => setState(() => _bookingStep = 3),
         onGoToEmergency: () => setState(() {
-          _currentMainTab = 2;
+          _currentMainTab = 3;
           _emergencyMode = 0;
           _emergencyCommuterStep = 1; // Direct jump to breakdown!
         }),
@@ -191,7 +370,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Column(
       children: [
-        // Sub-navigation step selector
         Container(
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -405,6 +583,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 
   Widget _buildDrawer() {
+    final user = _authState.currentUser;
     return Drawer(
       backgroundColor: Colors.white,
       child: ListView(
@@ -412,41 +591,71 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         children: [
           DrawerHeader(
             decoration: const BoxDecoration(gradient: VeluneColors.navyGradient),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 CircleAvatar(
-                  radius: 24,
+                  radius: 22,
                   backgroundColor: Colors.white,
                   child: Text(
-                    'V',
-                    style: TextStyle(color: VeluneColors.primaryNavy, fontWeight: FontWeight.bold, fontSize: 18),
+                    user != null ? user.name.split(' ').map((e) => e[0]).take(2).join() : 'V',
+                    style: const TextStyle(color: VeluneColors.primaryNavy, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Velune Corporate Platform',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  user?.name ?? 'Velune Corporate Platform',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 Text(
-                  'SLIIT IT3060 • Milestone 03 • Group WE_162',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                  user != null ? '${user.role.toUpperCase()} • ${user.maskedEmail}' : 'SLIIT IT3060 • Milestone 03',
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
           ),
 
+          // User Profile Quick Link
+          ListTile(
+            leading: const Icon(Icons.account_circle, color: VeluneColors.accentBlue),
+            title: const Text('My Employee Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('View verified badges, NIC & switch role', style: TextStyle(fontSize: 10)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProfileScreen(
+                    authState: _authState,
+                    onLogout: () {
+                      Navigator.pop(context);
+                      _authState.logout();
+                      setState(() {});
+                    },
+                    onSwitchRole: (newRole) {
+                      Navigator.pop(context);
+                      _authState.loginAsRole(newRole);
+                      _applyRoleHomeRoute(newRole);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const Divider(),
+
           // Platform Sections
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('NAVIGATION MENU', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted, letterSpacing: 1.1)),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text('EXPLORE MODULES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted, letterSpacing: 1.1)),
           ),
 
           ListTile(
             leading: const Icon(Icons.home, color: VeluneColors.primaryNavy),
-            title: const Text('Home Hub', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('Unified Portal & System Overview', style: TextStyle(fontSize: 10)),
+            title: const Text('Home (HF-03)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('Commuter Home & Upcoming Ride', style: TextStyle(fontSize: 10)),
             selected: _currentMainTab == 0,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
@@ -456,9 +665,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
 
           ListTile(
-            leading: const Icon(Icons.directions_car, color: VeluneColors.accentBlue),
-            title: const Text('Module 2: Carpool Booking & Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23555808 (Tissera) • 5 Screens', style: TextStyle(fontSize: 10)),
+            leading: const Icon(Icons.search, color: VeluneColors.accentBlue),
+            title: const Text('Module 1: Ride Discovery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23820050 (Karunarathna) • 6 Screens', style: TextStyle(fontSize: 10)),
             selected: _currentMainTab == 1,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
@@ -468,9 +677,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
 
           ListTile(
-            leading: const Icon(Icons.emergency, color: VeluneColors.danger),
-            title: const Text('Module 3: Emergency & Dispatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23829824 (Jayathilaka) • 6 Screens', style: TextStyle(fontSize: 10)),
+            leading: const Icon(Icons.directions_car, color: VeluneColors.accentBlue),
+            title: const Text('Module 2: Carpool Booking & Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23555808 (Tissera) • 5 Screens', style: TextStyle(fontSize: 10)),
             selected: _currentMainTab == 2,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
@@ -480,9 +689,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
 
           ListTile(
-            leading: const Icon(Icons.business, color: VeluneColors.primaryNavy),
-            title: const Text('Module 4: HR Corporate & ESG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23555112 (Amanda) • 6 Screens', style: TextStyle(fontSize: 10)),
+            leading: const Icon(Icons.emergency, color: VeluneColors.danger),
+            title: const Text('Module 3: Emergency & Dispatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23829824 (Jayathilaka) • 6 Screens', style: TextStyle(fontSize: 10)),
             selected: _currentMainTab == 3,
             selectedTileColor: VeluneColors.skyBlue,
             onTap: () {
@@ -491,39 +700,29 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             },
           ),
 
+          ListTile(
+            leading: const Icon(Icons.business, color: VeluneColors.primaryNavy),
+            title: const Text('Module 4: HR Corporate & ESG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            subtitle: const Text('IT23555112 (Amanda) • 6 Screens', style: TextStyle(fontSize: 10)),
+            selected: _currentMainTab == 4,
+            selectedTileColor: VeluneColors.skyBlue,
+            onTap: () {
+              setState(() => _currentMainTab = 4);
+              Navigator.pop(context);
+            },
+          ),
+
           const Divider(),
 
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('PROJECT REPOSITORY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted)),
-                const SizedBox(height: 4),
-                const Text('github.com/sahnas-11/Velune', style: TextStyle(fontSize: 11, color: VeluneColors.accentBlue, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: VeluneColors.successBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: VeluneColors.success.withValues(alpha: 0.3)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: VeluneColors.success, size: 16),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '17 Screens Active • SQLite / MySQL Synchronized',
-                          style: TextStyle(fontSize: 10, color: VeluneColors.success, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          // Logout
+          ListTile(
+            leading: const Icon(Icons.logout, color: VeluneColors.danger),
+            title: const Text('Sign Out', style: TextStyle(color: VeluneColors.danger, fontWeight: FontWeight.bold, fontSize: 13)),
+            onTap: () {
+              Navigator.pop(context);
+              _authState.logout();
+              setState(() {});
+            },
           ),
         ],
       ),

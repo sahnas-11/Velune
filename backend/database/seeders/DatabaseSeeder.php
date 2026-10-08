@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
 
         // Module Seeders
         $this->call([
+            DiscoverySeeder::class,
             BookingSeeder::class,
             EmergencySeeder::class,
             HrCorporateSeeder::class,
