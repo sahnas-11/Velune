@@ -4,7 +4,7 @@ import 'core/theme.dart';
 // Module 1: Auth & Verification (Karunarathna IT23820050)
 import 'features/auth/state/auth_state.dart';
 import 'features/auth/screens/splash_screen.dart';
-import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/auth_screen.dart';
 import 'features/auth/screens/corporate_verification_screen.dart';
 import 'features/auth/screens/government_id_screen.dart';
 import 'features/auth/screens/profile_screen.dart';
@@ -39,7 +39,6 @@ import 'state/hr_state.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/co2_report_screen.dart';
 import 'screens/parking_screen.dart';
-import 'screens/statistics_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/incentives_screen.dart';
 
@@ -69,30 +68,25 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // Navigation Flow State
+  // Global Flow State
   bool _showSplash = true;
   bool _inOtpFlow = false;
-  int _currentMainTab = 0; // 0=Home, 1=Discovery, 2=Booking, 3=Emergency, 4=HR
 
-  // Sub-steps within Discovery (Module 1)
-  int _discoveryStep = 0; // 0=Find Ride, 1=Available Rides, 2=Ride Details
+  // Commuter Shell Navigation State
+  int _commuterTab = 0; // 0=Home, 1=Find Rides, 2=My Trips, 3=SOS, 4=Profile
+  int _commuterSearchStep = 0; // 0=Search Form, 1=Available Rides, 2=Ride Details
   int _selectedDiscoveryRideId = 1;
+  int _bookingStep = 0; // 0=Confirm, 1=Pickup, 2=Active Trip, 3=Fare Split, 4=Receipt
+  int _commuterEmergencyStep = 0; // 0=Active Ride, 1=Breakdown Form, 2=Dispatched
 
-  // Sub-steps within Booking (Module 2)
-  int _bookingStep = 0;
-
-  // Sub-steps within Emergency (Module 3)
-  int _emergencyMode = 0; // 0=Commuter, 1=Mechanic
-  int _emergencyCommuterStep = 0;
-  int _emergencyMechanicStep = 0;
+  // Mechanic Shell Navigation State
+  int _mechanicTab = 0; // 0=Queue, 1=Triage/Diag, 2=Status, 3=Profile
   EmergencyIncident? _selectedIncident;
 
-  // Sub-steps within HR (Module 4)
-  int _hrTab = 0;
+  // HR Shell Navigation State
+  int _hrTab = 0; // 0=Dashboard, 1=Parking, 2=CO2, 3=Incentives, 4=Reports
 
-  // Feature State instances
+  // Shared Reactive States
   final AuthState _authState = AuthState();
   final DiscoveryState _discoveryState = DiscoveryState();
   final BookingState _bookingState = BookingState();
@@ -115,20 +109,18 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     setState(() {});
   }
 
-  // Role-based landing route
-  void _applyRoleHomeRoute(String role) {
+  void _onAuthenticated(String role) {
     setState(() {
       _inOtpFlow = false;
       if (role == 'hr_manager') {
-        _currentMainTab = 4; // HR Corporate
         _hrTab = 0;
       } else if (role == 'mechanic') {
-        _currentMainTab = 3; // Emergency Mechanic
-        _emergencyMode = 1;
-        _emergencyMechanicStep = 0;
+        _mechanicTab = 0;
+        _selectedIncident = null;
       } else {
-        _currentMainTab = 0; // Commuter Home
-        _discoveryStep = 0;
+        _commuterTab = 0;
+        _commuterSearchStep = 0;
+        _bookingStep = 0;
       }
     });
   }
@@ -144,7 +136,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       );
     }
 
-    // 2. Authentication Flow
+    // 2. Unauthenticated: Auth Flow (Sign In, Registration, OTP)
     if (!_authState.isAuthenticated) {
       if (_inOtpFlow) {
         return CorporateVerificationScreen(
@@ -152,7 +144,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           onBackToLogin: () => setState(() => _inOtpFlow = false),
           onVerified: () {
             final role = _authState.currentUser?.role ?? 'commuter';
-            _applyRoleHomeRoute(role);
+            _onAuthenticated(role);
           },
           onOpenGovernmentId: () {
             Navigator.push(
@@ -168,445 +160,97 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         );
       }
 
-      return LoginScreen(
+      return AuthScreen(
         state: _authState,
         onContinueToOtp: () => setState(() => _inOtpFlow = true),
-        onDirectRoleLogin: (role) {
-          _authState.loginAsRole(role);
-          _applyRoleHomeRoute(role);
-        },
+        onAuthenticated: (role) => _onAuthenticated(role),
       );
     }
 
-    // 3. Authenticated App Experience
-    Widget activeContent;
+    // 3. Authenticated: STRICT ROLE-SPECIFIC APP SHELLS
+    final currentUser = _authState.currentUser!;
+    final role = currentUser.role;
 
-    switch (_currentMainTab) {
-      case 0:
-        // 🏠 Commuter Home (Module 1, HF-03)
-        activeContent = CommuterHomeScreen(
-          state: _discoveryState,
-          userName: _authState.currentUser?.name ?? 'Jay',
-          onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
-          onOpenProfile: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfileScreen(
-                  authState: _authState,
-                  onLogout: () {
-                    Navigator.pop(context);
-                    _authState.logout();
-                    setState(() {});
-                  },
-                  onSwitchRole: (newRole) {
-                    Navigator.pop(context);
-                    _authState.loginAsRole(newRole);
-                    _applyRoleHomeRoute(newRole);
-                  },
-                ),
-              ),
-            );
-          },
-          onFindRidePressed: () {
-            setState(() {
-              _currentMainTab = 1;
-              _discoveryStep = 1; // Direct jump to available rides!
-            });
-          },
-          onRideSelected: (rideId) {
-            setState(() {
-              _currentMainTab = 1;
-              _selectedDiscoveryRideId = rideId;
-              _discoveryStep = 2; // Direct jump to ride details!
-            });
-          },
-        );
-        break;
-
-      case 1:
-        // 🔍 Commuter Ride Discovery (Module 1: Karunarathna)
-        activeContent = _buildDiscoveryModuleView();
-        break;
-
-      case 2:
-        // 🚗 Carpool Booking & Fare Settlement (Module 2: Tissera)
-        activeContent = _buildBookingModuleView();
-        break;
-
-      case 3:
-        // 🚨 Emergency Breakdown & Fleet Dispatch (Module 3: Jayathilaka)
-        activeContent = _buildEmergencyModuleView();
-        break;
-
-      case 4:
-      default:
-        // 🏢 HR Corporate & System Integration (Module 4: Amanda)
-        activeContent = _buildHrModuleView();
-        break;
+    if (role == 'hr_manager') {
+      return _buildHrAppShell();
+    } else if (role == 'mechanic') {
+      return _buildMechanicAppShell();
+    } else {
+      return _buildCommuterAppShell();
     }
+  }
+
+  // =========================================================================
+  // 🏢 1. HR CORPORATE SUSTAINABILITY SHELL (Only HR screens & features)
+  // =========================================================================
+  Widget _buildHrAppShell() {
+    final List<Widget> hrScreens = [
+      // Tab 0: HR Corporate Dashboard
+      DashboardScreen(
+        state: _hrState,
+        onNavigateTab: (tabIndex) => setState(() => _hrTab = tabIndex),
+      ),
+      // Tab 1: Parking Deck B (CRUD Bay Allocations)
+      ParkingScreen(
+        state: _hrState,
+        onNavigateTab: (tabIndex) => setState(() => _hrTab = tabIndex),
+      ),
+      // Tab 2: CO2 & ESG Records (Download PDF)
+      Co2ReportScreen(
+        state: _hrState,
+      ),
+      // Tab 3: Corporate Incentive Programs (CRUD Incentives)
+      IncentivesScreen(
+        state: _hrState,
+      ),
+      // Tab 4: Scope 3 ESG Audit Reports (Generate & Download)
+      ReportsScreen(
+        state: _hrState,
+      ),
+    ];
 
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: _buildDrawer(),
-      body: SafeArea(child: activeContent),
+      drawer: _buildHrDrawer(),
+      body: SafeArea(child: hrScreens[_hrTab]),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentMainTab,
+        selectedIndex: _hrTab,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VeluneColors.skyBlue,
         height: 68,
-        onDestinationSelected: (idx) => setState(() => _currentMainTab = idx),
+        onDestinationSelected: (idx) => setState(() => _hrTab = idx),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: VeluneColors.primaryNavy),
-            label: 'Home',
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard, color: VeluneColors.primaryNavy),
+            label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search, color: VeluneColors.accentBlue),
-            label: 'Rides',
+            icon: Icon(Icons.local_parking_outlined),
+            selectedIcon: Icon(Icons.local_parking, color: VeluneColors.accentBlue),
+            label: 'Parking',
           ),
           NavigationDestination(
-            icon: Icon(Icons.directions_car_outlined),
-            selectedIcon: Icon(Icons.directions_car, color: VeluneColors.accentBlue),
-            label: 'Booking',
+            icon: Icon(Icons.eco_outlined),
+            selectedIcon: Icon(Icons.eco, color: VeluneColors.success),
+            label: 'CO2 & ESG',
           ),
           NavigationDestination(
-            icon: Icon(Icons.emergency_outlined),
-            selectedIcon: Icon(Icons.emergency, color: VeluneColors.danger),
-            label: 'Emergency',
+            icon: Icon(Icons.card_giftcard_outlined),
+            selectedIcon: Icon(Icons.card_giftcard, color: VeluneColors.accentBlue),
+            label: 'Rewards',
           ),
           NavigationDestination(
-            icon: Icon(Icons.business_outlined),
-            selectedIcon: Icon(Icons.business, color: VeluneColors.primaryNavy),
-            label: 'HR Portal',
+            icon: Icon(Icons.description_outlined),
+            selectedIcon: Icon(Icons.description, color: VeluneColors.primaryNavy),
+            label: 'Reports',
           ),
         ],
       ),
     );
   }
 
-  // ==========================================
-  // Module 1 View: Ride Discovery (Karunarathna)
-  // ==========================================
-  Widget _buildDiscoveryModuleView() {
-    final List<Widget> screens = [
-      FindRideScreen(
-        state: _discoveryState,
-        onBack: () => setState(() => _currentMainTab = 0),
-        onSearchSubmitted: () => setState(() => _discoveryStep = 1),
-      ),
-      AvailableRidesScreen(
-        state: _discoveryState,
-        onBack: () => setState(() => _discoveryStep = 0),
-        onViewRide: (rideId) => setState(() {
-          _selectedDiscoveryRideId = rideId;
-          _discoveryStep = 2;
-        }),
-      ),
-      RideDetailsScreen(
-        state: _discoveryState,
-        rideId: _selectedDiscoveryRideId,
-        onBack: () => setState(() => _discoveryStep = 1),
-        onContinueToBook: (rideId) {
-          // Seamless handoff from Module 1 (Discovery) to Module 2 (Booking)!
-          setState(() {
-            _currentMainTab = 2;
-            _bookingStep = 0; // Booking confirmation screen
-          });
-        },
-      ),
-    ];
-
-    final labels = ['1. Find a Ride', '2. Available Rides', '3. Ride Details'];
-
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(labels.length, (idx) {
-              final isSelected = _discoveryStep == idx;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(labels[idx]),
-                  selected: isSelected,
-                  selectedColor: VeluneColors.skyBlue,
-                  backgroundColor: VeluneColors.background,
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? VeluneColors.accentBlue : VeluneColors.textSecondary,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: isSelected ? VeluneColors.accentBlue : VeluneColors.border),
-                  ),
-                  onSelected: (_) => setState(() => _discoveryStep = idx),
-                ),
-              );
-            }),
-          ),
-        ),
-        Expanded(child: screens[_discoveryStep]),
-      ],
-    );
-  }
-
-  // ==========================================
-  // Module 2 View: Booking & Fare Settlement
-  // ==========================================
-  Widget _buildBookingModuleView() {
-    final List<Widget> bookingScreens = [
-      BookingConfirmationScreen(
-        state: _bookingState,
-        onProceedToPickup: () => setState(() => _bookingStep = 1),
-      ),
-      LivePickupScreen(
-        state: _bookingState,
-        onBoardedRide: () => setState(() => _bookingStep = 2),
-      ),
-      ActiveTripScreen(
-        state: _bookingState,
-        onGoToSettlement: () => setState(() => _bookingStep = 3),
-        onGoToEmergency: () => setState(() {
-          _currentMainTab = 3;
-          _emergencyMode = 0;
-          _emergencyCommuterStep = 1; // Direct jump to breakdown!
-        }),
-      ),
-      FareSettlementScreen(
-        state: _bookingState,
-        onPaymentApproved: () => setState(() => _bookingStep = 4),
-      ),
-      PaymentReceiptScreen(
-        state: _bookingState,
-        onReturnToHub: () => setState(() => _currentMainTab = 0),
-      ),
-    ];
-
-    final stepLabels = ['1. Confirm', '2. Pickup (3m)', '3. Active Trip', '4. Fare Split', '5. Receipt'];
-
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(stepLabels.length, (idx) {
-                final isSelected = _bookingStep == idx;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    label: Text(stepLabels[idx]),
-                    selected: isSelected,
-                    selectedColor: VeluneColors.skyBlue,
-                    backgroundColor: VeluneColors.background,
-                    labelStyle: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? VeluneColors.accentBlue : VeluneColors.textSecondary,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? VeluneColors.accentBlue : VeluneColors.border),
-                    ),
-                    onSelected: (_) => setState(() => _bookingStep = idx),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-        Expanded(child: bookingScreens[_bookingStep]),
-      ],
-    );
-  }
-
-  // ==========================================
-  // Module 3 View: Emergency & Fleet Dispatch
-  // ==========================================
-  Widget _buildEmergencyModuleView() {
-    final inc = _selectedIncident ?? _emergencyState.queue.first;
-
-    final List<Widget> commuterScreens = [
-      ActiveRideScreen(
-        state: _emergencyState,
-        onRequestEmergency: () => setState(() => _emergencyCommuterStep = 1),
-      ),
-      EmergencyBreakdownScreen(
-        state: _emergencyState,
-        onMechanicRequested: () => setState(() => _emergencyCommuterStep = 2),
-      ),
-      HelpRequestedScreen(
-        state: _emergencyState,
-        onIncidentClosed: () => setState(() => _emergencyCommuterStep = 0),
-      ),
-    ];
-
-    final List<Widget> mechanicScreens = [
-      MechanicQueueScreen(
-        state: _emergencyState,
-        onInspectIncident: (item) {
-          setState(() {
-            _selectedIncident = item;
-            _emergencyMechanicStep = 1;
-          });
-        },
-      ),
-      MechanicRequestDetailsScreen(
-        state: _emergencyState,
-        incident: inc,
-        onAccepted: () => setState(() => _emergencyMechanicStep = 2),
-      ),
-      DispatchStatusScreen(
-        state: _emergencyState,
-        onResolved: () => setState(() => _emergencyMechanicStep = 0),
-      ),
-    ];
-
-    final commuterLabels = ['1. Active Ride', '2. Breakdown Alert', '3. Dispatched'];
-    final mechanicLabels = ['1. Job Queue', '2. Triage Details', '3. Diagnostics & Resolve'];
-
-    return Column(
-      children: [
-        // Mode switch: Commuter vs Mechanic
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: SegmentedButton<int>(
-                  segments: const [
-                    ButtonSegment(
-                      value: 0,
-                      label: Text('Commuter Flow', style: TextStyle(fontSize: 11)),
-                      icon: Icon(Icons.person_pin_circle_outlined, size: 16),
-                    ),
-                    ButtonSegment(
-                      value: 1,
-                      label: Text('Mechanic Fleet', style: TextStyle(fontSize: 11)),
-                      icon: Icon(Icons.build_outlined, size: 16),
-                    ),
-                  ],
-                  selected: {_emergencyMode},
-                  onSelectionChanged: (val) => setState(() => _emergencyMode = val.first),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Sub-step chips
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(3, (idx) {
-              final isCommuter = _emergencyMode == 0;
-              final isSelected = isCommuter ? _emergencyCommuterStep == idx : _emergencyMechanicStep == idx;
-              final label = isCommuter ? commuterLabels[idx] : mechanicLabels[idx];
-              final activeColor = isCommuter ? VeluneColors.danger : VeluneColors.primaryNavy;
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(label),
-                  selected: isSelected,
-                  selectedColor: isCommuter ? VeluneColors.dangerBg : VeluneColors.skyBlue,
-                  backgroundColor: VeluneColors.background,
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? activeColor : VeluneColors.textSecondary,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: isSelected ? activeColor : VeluneColors.border),
-                  ),
-                  onSelected: (_) => setState(() {
-                    if (isCommuter) {
-                      _emergencyCommuterStep = idx;
-                    } else {
-                      _emergencyMechanicStep = idx;
-                    }
-                  }),
-                ),
-              );
-            }),
-          ),
-        ),
-
-        Expanded(
-          child: _emergencyMode == 0 ? commuterScreens[_emergencyCommuterStep] : mechanicScreens[_emergencyMechanicStep],
-        ),
-      ],
-    );
-  }
-
-  // ==========================================
-  // Module 4 View: HR & Corporate Portal
-  // ==========================================
-  Widget _buildHrModuleView() {
-    final List<Widget> hrScreens = [
-      DashboardScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
-      Co2ReportScreen(state: _hrState),
-      ParkingScreen(state: _hrState, onNavigateTab: (idx) => setState(() => _hrTab = idx)),
-      StatisticsScreen(state: _hrState),
-      ReportsScreen(state: _hrState),
-      IncentivesScreen(state: _hrState),
-    ];
-
-    final hrLabels = ['Dashboard', 'CO2 Logs', 'Parking Deck B', 'Analytics', 'ESG Reports', 'Rewards'];
-
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(hrLabels.length, (idx) {
-                final isSelected = _hrTab == idx;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    label: Text(hrLabels[idx]),
-                    selected: isSelected,
-                    selectedColor: VeluneColors.skyBlue,
-                    backgroundColor: VeluneColors.background,
-                    labelStyle: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? VeluneColors.primaryNavy : VeluneColors.textSecondary,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? VeluneColors.primaryNavy : VeluneColors.border),
-                    ),
-                    onSelected: (_) => setState(() => _hrTab = idx),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-        Expanded(child: hrScreens[_hrTab]),
-      ],
-    );
-  }
-
-  Widget _buildDrawer() {
+  Widget _buildHrDrawer() {
     final user = _authState.currentUser;
     return Drawer(
       backgroundColor: Colors.white,
@@ -620,133 +264,436 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 CircleAvatar(
-                  radius: 22,
+                  radius: 24,
                   backgroundColor: Colors.white,
                   child: Text(
-                    user != null ? user.name.split(' ').map((e) => e[0]).take(2).join() : 'V',
+                    user != null ? user.name.split(' ').map((e) => e[0]).take(2).join() : 'HR',
                     style: const TextStyle(color: VeluneColors.primaryNavy, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
-                  user?.name ?? 'Velune Corporate Platform',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  user?.name ?? 'Amanda Jayawardena',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 Text(
-                  user != null ? '${user.role.toUpperCase()} • ${user.maskedEmail}' : 'SLIIT IT3060 • Milestone 03',
+                  '${user?.hrBadgeId ?? "HR-CORP-992"} • ${user?.officeBranch ?? "Colombo HQ"}',
                   style: const TextStyle(color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),
           ),
-
-          // User Profile Quick Link
           ListTile(
-            leading: const Icon(Icons.account_circle, color: VeluneColors.accentBlue),
-            title: const Text('My Employee Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('View verified badges, NIC & switch role', style: TextStyle(fontSize: 10)),
+            leading: const Icon(Icons.dashboard, color: VeluneColors.primaryNavy),
+            title: const Text('Executive Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: _hrTab == 0,
             onTap: () {
+              setState(() => _hrTab = 0);
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfileScreen(
-                    authState: _authState,
-                    onLogout: () {
-                      Navigator.pop(context);
-                      _authState.logout();
-                      setState(() {});
-                    },
-                    onSwitchRole: (newRole) {
-                      Navigator.pop(context);
-                      _authState.loginAsRole(newRole);
-                      _applyRoleHomeRoute(newRole);
-                    },
-                  ),
-                ),
-              );
             },
           ),
-
+          ListTile(
+            leading: const Icon(Icons.local_parking, color: VeluneColors.accentBlue),
+            title: const Text('Priority Deck B Parking', style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: _hrTab == 1,
+            onTap: () {
+              setState(() => _hrTab = 1);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.eco, color: VeluneColors.success),
+            title: const Text('Carbon Reduction Metrics', style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: _hrTab == 2,
+            onTap: () {
+              setState(() => _hrTab = 2);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.card_giftcard, color: VeluneColors.accentBlue),
+            title: const Text('Corporate Incentives', style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: _hrTab == 3,
+            onTap: () {
+              setState(() => _hrTab = 3);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description, color: VeluneColors.primaryNavy),
+            title: const Text('ESG Monthly Reports (PDF)', style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: _hrTab == 4,
+            onTap: () {
+              setState(() => _hrTab = 4);
+              Navigator.pop(context);
+            },
+          ),
           const Divider(),
-
-          // Platform Sections
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text('EXPLORE MODULES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textMuted, letterSpacing: 1.1)),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.home, color: VeluneColors.primaryNavy),
-            title: const Text('Home (HF-03)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('Commuter Home & Upcoming Ride', style: TextStyle(fontSize: 10)),
-            selected: _currentMainTab == 0,
-            selectedTileColor: VeluneColors.skyBlue,
-            onTap: () {
-              setState(() => _currentMainTab = 0);
-              Navigator.pop(context);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.search, color: VeluneColors.accentBlue),
-            title: const Text('Module 1: Ride Discovery', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23820050 (Karunarathna) • 6 Screens', style: TextStyle(fontSize: 10)),
-            selected: _currentMainTab == 1,
-            selectedTileColor: VeluneColors.skyBlue,
-            onTap: () {
-              setState(() => _currentMainTab = 1);
-              Navigator.pop(context);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.directions_car, color: VeluneColors.accentBlue),
-            title: const Text('Module 2: Carpool Booking & Fare', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23555808 (Tissera) • 5 Screens', style: TextStyle(fontSize: 10)),
-            selected: _currentMainTab == 2,
-            selectedTileColor: VeluneColors.skyBlue,
-            onTap: () {
-              setState(() => _currentMainTab = 2);
-              Navigator.pop(context);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.emergency, color: VeluneColors.danger),
-            title: const Text('Module 3: Emergency & Dispatch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23829824 (Jayathilaka) • 6 Screens', style: TextStyle(fontSize: 10)),
-            selected: _currentMainTab == 3,
-            selectedTileColor: VeluneColors.skyBlue,
-            onTap: () {
-              setState(() => _currentMainTab = 3);
-              Navigator.pop(context);
-            },
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.business, color: VeluneColors.primaryNavy),
-            title: const Text('Module 4: HR Corporate & ESG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: const Text('IT23555112 (Amanda) • 6 Screens', style: TextStyle(fontSize: 10)),
-            selected: _currentMainTab == 4,
-            selectedTileColor: VeluneColors.skyBlue,
-            onTap: () {
-              setState(() => _currentMainTab = 4);
-              Navigator.pop(context);
-            },
-          ),
-
-          const Divider(),
-
-          // Logout
           ListTile(
             leading: const Icon(Icons.logout, color: VeluneColors.danger),
-            title: const Text('Sign Out', style: TextStyle(color: VeluneColors.danger, fontWeight: FontWeight.bold, fontSize: 13)),
+            title: const Text('Sign Out', style: TextStyle(color: VeluneColors.danger, fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.pop(context);
               _authState.logout();
-              setState(() {});
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 🔧 2. ROADSIDE MECHANIC FLEET SHELL (Only Mechanic screens & features)
+  // =========================================================================
+  Widget _buildMechanicAppShell() {
+    final incident = _selectedIncident ?? _emergencyState.queue.first;
+
+    Widget activeContent;
+    switch (_mechanicTab) {
+      case 0:
+        // Job Queue
+        activeContent = MechanicQueueScreen(
+          state: _emergencyState,
+          onInspectIncident: (item) {
+            setState(() {
+              _selectedIncident = item;
+              _mechanicTab = 1; // Transition to detailed triage & diagnostics
+            });
+          },
+        );
+        break;
+
+      case 1:
+        // Detailed Triage, Diagnostics & Notes (CRUD)
+        activeContent = MechanicRequestDetailsScreen(
+          state: _emergencyState,
+          incident: incident,
+          onAccepted: () {
+            setState(() {
+              _mechanicTab = 2; // Transition to active dispatch tracker
+            });
+          },
+        );
+        break;
+
+      case 2:
+        // Active Dispatch Tracking & Status Resolution
+        activeContent = DispatchStatusScreen(
+          state: _emergencyState,
+          onResolved: () {
+            setState(() {
+              _mechanicTab = 0; // Return to queue upon resolution
+              _selectedIncident = null;
+            });
+          },
+        );
+        break;
+
+      case 3:
+      default:
+        // Mechanic Profile & Sign Out
+        activeContent = _buildMechanicProfileView();
+        break;
+    }
+
+    return Scaffold(
+      body: SafeArea(child: activeContent),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _mechanicTab,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: VeluneColors.warningBg,
+        height: 68,
+        onDestinationSelected: (idx) => setState(() => _mechanicTab = idx),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.format_list_bulleted_outlined),
+            selectedIcon: Icon(Icons.format_list_bulleted, color: VeluneColors.warning),
+            label: 'Job Queue',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.build_circle_outlined),
+            selectedIcon: Icon(Icons.build, color: VeluneColors.warning),
+            label: 'Diagnostics',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.fmd_good_outlined),
+            selectedIcon: Icon(Icons.fmd_good, color: VeluneColors.primaryNavy),
+            label: 'Dispatch',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_circle_outlined),
+            selectedIcon: Icon(Icons.account_circle, color: VeluneColors.primaryNavy),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMechanicProfileView() {
+    final user = _authState.currentUser;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Technician Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: VeluneColors.warningBg,
+              child: const Icon(Icons.build, size: 40, color: VeluneColors.warning),
+            ),
+            const SizedBox(height: 14),
+            Text(user?.name ?? 'Nalin Silva', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 4),
+            Text('Authorized Roadside Technician • ${user?.email}', style: const TextStyle(fontSize: 12, color: VeluneColors.textSecondary)),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: VeluneColors.border)),
+              child: Column(
+                children: [
+                  _buildProfileRow('License ID', user?.licenseId ?? 'MEC-LK-9021'),
+                  const Divider(),
+                  _buildProfileRow('Fleet Hub', user?.workshopName ?? 'Expressway Fleet Center - Matara'),
+                  const Divider(),
+                  _buildProfileRow('Service Van', 'WP-CAB-8812 (Mobile Workshop Unit)'),
+                  const Divider(),
+                  _buildProfileRow('Active Status', 'On Duty • Immediate Response'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: VeluneColors.danger, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: () => _authState.logout(),
+                icon: const Icon(Icons.logout, color: Colors.white),
+                label: const Text('SIGN OUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 🚗 3. COMMUTER CARPOOL SHELL (Only Commuter screens & features)
+  // =========================================================================
+  Widget _buildCommuterAppShell() {
+    Widget activeContent;
+
+    switch (_commuterTab) {
+      case 0:
+        // Tab 0: Commuter Home (HF-03)
+        activeContent = CommuterHomeScreen(
+          state: _discoveryState,
+          userName: _authState.currentUser?.name ?? 'Jay',
+          onFindRidePressed: () {
+            setState(() {
+              _commuterTab = 1; // Switch to Find Rides tab
+              _commuterSearchStep = 1; // Jump straight to Available Rides
+            });
+          },
+          onRideSelected: (rideId) {
+            setState(() {
+              _commuterTab = 1; // Switch to Find Rides tab
+              _selectedDiscoveryRideId = rideId;
+              _commuterSearchStep = 2; // Jump straight to Ride Details
+            });
+          },
+          onOpenProfile: () => setState(() => _commuterTab = 4),
+        );
+        break;
+
+      case 1:
+        // Tab 1: Find & Discover Rides (HF-04, HF-05, HF-06)
+        activeContent = _buildCommuterDiscoveryFlow();
+        break;
+
+      case 2:
+        // Tab 2: My Bookings & Carpool Trips (Module 2: Confirm, Pickup, Active, Fare Split, Receipt)
+        activeContent = _buildCommuterBookingFlow();
+        break;
+
+      case 3:
+        // Tab 3: Safety & Roadside SOS (Module 3 Commuter Breakdown Assistance)
+        activeContent = _buildCommuterEmergencyFlow();
+        break;
+
+      case 4:
+      default:
+        // Tab 4: Commuter Profile & Identity
+        activeContent = ProfileScreen(
+          authState: _authState,
+          onLogout: () => _authState.logout(),
+          onSwitchRole: (newRole) => _authState.loginAsRole(newRole),
+        );
+        break;
+    }
+
+    return Scaffold(
+      body: SafeArea(child: activeContent),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _commuterTab,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: VeluneColors.skyBlue,
+        height: 68,
+        onDestinationSelected: (idx) {
+          setState(() {
+            _commuterTab = idx;
+            if (idx == 1) _commuterSearchStep = 0;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: VeluneColors.primaryNavy),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search, color: VeluneColors.accentBlue),
+            label: 'Find Rides',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.directions_car_outlined),
+            selectedIcon: Icon(Icons.directions_car, color: VeluneColors.accentBlue),
+            label: 'My Trips',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.emergency_outlined),
+            selectedIcon: Icon(Icons.emergency, color: VeluneColors.danger),
+            label: 'Safety SOS',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: VeluneColors.primaryNavy),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Natural flow within Commuter Discovery (Search -> Results -> Details -> Book)
+  Widget _buildCommuterDiscoveryFlow() {
+    switch (_commuterSearchStep) {
+      case 0:
+        return FindRideScreen(
+          state: _discoveryState,
+          onBack: () => setState(() => _commuterTab = 0),
+          onSearchSubmitted: () => setState(() => _commuterSearchStep = 1),
+        );
+      case 1:
+        return AvailableRidesScreen(
+          state: _discoveryState,
+          onBack: () => setState(() => _commuterSearchStep = 0),
+          onViewRide: (rideId) => setState(() {
+            _selectedDiscoveryRideId = rideId;
+            _commuterSearchStep = 2;
+          }),
+        );
+      case 2:
+      default:
+        return RideDetailsScreen(
+          state: _discoveryState,
+          rideId: _selectedDiscoveryRideId,
+          onBack: () => setState(() => _commuterSearchStep = 1),
+          onContinueToBook: (rideId) {
+            // Seamless handoff from Ride Discovery to Booking module!
+            setState(() {
+              _commuterTab = 2; // Jump to My Trips tab
+              _bookingStep = 0; // Start at Booking Confirmation
+            });
+          },
+        );
+    }
+  }
+
+  // Natural flow within Commuter Booking (Confirm -> Pickup -> Active Trip -> Fare Split -> Receipt)
+  Widget _buildCommuterBookingFlow() {
+    switch (_bookingStep) {
+      case 0:
+        return BookingConfirmationScreen(
+          state: _bookingState,
+          onProceedToPickup: () => setState(() => _bookingStep = 1),
+        );
+      case 1:
+        return LivePickupScreen(
+          state: _bookingState,
+          onBoardedRide: () => setState(() => _bookingStep = 2),
+        );
+      case 2:
+        return ActiveTripScreen(
+          state: _bookingState,
+          onGoToSettlement: () => setState(() => _bookingStep = 3),
+          onGoToEmergency: () {
+            setState(() {
+              _commuterTab = 3; // Switch to SOS tab!
+              _commuterEmergencyStep = 1;
+            });
+          },
+        );
+      case 3:
+        return FareSettlementScreen(
+          state: _bookingState,
+          onPaymentApproved: () => setState(() => _bookingStep = 4),
+        );
+      case 4:
+      default:
+        return PaymentReceiptScreen(
+          state: _bookingState,
+          onReturnToHub: () {
+            setState(() {
+              _commuterTab = 0; // Return to Home
+              _bookingStep = 0;
+            });
+          },
+        );
+    }
+  }
+
+  // Natural flow within Commuter Emergency (Active Telemetry -> Breakdown Report -> Dispatched)
+  Widget _buildCommuterEmergencyFlow() {
+    switch (_commuterEmergencyStep) {
+      case 0:
+        return ActiveRideScreen(
+          state: _emergencyState,
+          onRequestEmergency: () => setState(() => _commuterEmergencyStep = 1),
+        );
+      case 1:
+        return EmergencyBreakdownScreen(
+          state: _emergencyState,
+          onMechanicRequested: () => setState(() => _commuterEmergencyStep = 2),
+        );
+      case 2:
+      default:
+        return HelpRequestedScreen(
+          state: _emergencyState,
+          onIncidentClosed: () => setState(() => _commuterEmergencyStep = 0),
+        );
+    }
+  }
+
+  Widget _buildProfileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: VeluneColors.textSecondary)),
+          Flexible(
+            child: Text(value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: VeluneColors.textPrimary)),
           ),
         ],
       ),

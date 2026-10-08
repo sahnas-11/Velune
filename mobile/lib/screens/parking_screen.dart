@@ -57,7 +57,13 @@ class ParkingScreen extends StatelessWidget {
                 onPressed: () {
                   final riders = int.tryParse(commutersCtrl.text) ?? 3;
                   if (groupCtrl.text.isNotEmpty && spotCtrl.text.isNotEmpty) {
-                    state.allocateSpot(groupCtrl.text, routeCtrl.text, riders, spotCtrl.text, status);
+                    state.allocateSpot(
+                      groupName: groupCtrl.text,
+                      route: routeCtrl.text,
+                      commuters: riders,
+                      spotCode: spotCtrl.text,
+                      status: status,
+                    );
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Allocated ${spotCtrl.text} to ${groupCtrl.text}')),

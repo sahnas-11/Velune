@@ -146,11 +146,34 @@ class ReportsScreen extends StatelessWidget {
                   backgroundColor: VeluneColors.primaryNavy,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Downloaded ${report.title} to device storage.')),
+                    const SnackBar(content: Text('Downloading official Scope 3 audit report...')),
                   );
+                  final path = await state.downloadReportPdf(report);
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Row(
+                          children: [
+                            Icon(Icons.check_circle, color: VeluneColors.success),
+                            SizedBox(width: 8),
+                            Text('Report Saved!'),
+                          ],
+                        ),
+                        content: Text('Successfully downloaded:\n$path\n\nSize: ${report.fileSizeMb} MB\nScope: ${report.auditScope}'),
+                        actions: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: VeluneColors.primaryNavy),
+                            onPressed: () => Navigator.pop(c),
+                            child: const Text('OK', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.download, color: Colors.white),
                 label: const Text('Download PDF File', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

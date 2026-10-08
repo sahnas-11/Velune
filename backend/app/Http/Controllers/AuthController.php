@@ -240,4 +240,95 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Corporate User Registration
+     */
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email',
+                function ($attr, $value, $fail) {
+                    $lower = strtolower($value);
+                    if (!str_ends_with($lower, '@company.com') && !str_ends_with($lower, '@velune.lk')) {
+                        $fail('Only verified corporate emails ending with @company.com or @velune.lk are permitted.');
+                    }
+                }
+            ],
+            'password' => 'required|string|min:6',
+            'role' => 'required|in:commuter,hr_manager,mechanic',
+            'employee_id' => 'nullable|string',
+            'department' => 'nullable|string',
+            'commute_mode' => 'nullable|string',
+            'nic_number' => 'nullable|string',
+            'campus_branch' => 'nullable|string',
+            'workshop_name' => 'nullable|string',
+        ]);
+
+        $last3 = '821';
+        if (!empty($validated['nic_number'])) {
+            $last3 = substr(trim($validated['nic_number']), -3);
+        }
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => strtolower($validated['email']),
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'email_verified_at' => Carbon::now(),
+            'id_verified_at' => !empty($validated['nic_number']) ? Carbon::now() : null,
+            'government_id_last3' => $last3,
+        ]);
+
+        $token = $user->createToken('velune-auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Corporate account successfully registered for ' . $user->name,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'email_verified' => true,
+                'id_verified' => (bool) $user->id_verified_at,
+                'government_id_last3' => $user->government_id_last3,
+            ]
+        ], 201);
+    }
+
+    /**
+     * Password Reset
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'new_password' => 'required|string|min:6',
+        ]);
+
+        $email = strtolower($validated['email']);
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No corporate account found with that email address',
+            ], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['new_password']),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully. You may now sign in with your new password.',
+        ]);
+    }
 }

@@ -206,7 +206,7 @@ class _CorporateVerificationScreenState extends State<CorporateVerificationScree
               // Helper chip with demo OTP
               ActionChip(
                 avatar: const Icon(Icons.key, size: 14, color: VeluneColors.success),
-                label: Text('Demo OTP: ${widget.state.debugOtp} (Click to Auto-fill)', style: const TextStyle(fontSize: 11)),
+                label: Text('Demo OTP: ${widget.state.debugOtp} (Auto-fill)', style: const TextStyle(fontSize: 11)),
                 backgroundColor: VeluneColors.successBg,
                 side: BorderSide(color: VeluneColors.success.withValues(alpha: 0.3)),
                 onPressed: () => _fillOtp(widget.state.debugOtp),

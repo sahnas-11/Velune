@@ -337,9 +337,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Icon(Icons.lock_outline, size: 13, color: VeluneColors.textMuted),
                       const SizedBox(width: 6),
-                      Text(
-                        'Secure employee access • Protected with end-to-end organizational federation',
-                        style: TextStyle(fontSize: 10, color: VeluneColors.textMuted.withValues(alpha: 0.9)),
+                      Flexible(
+                        child: Text(
+                          'Secure employee access • Organizational SSO Federation',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 10, color: VeluneColors.textMuted.withValues(alpha: 0.9)),
+                        ),
                       ),
                     ],
                   ),

@@ -56,6 +56,117 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _showNotificationSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final notifs = widget.state.notifications;
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.notifications_active, color: VeluneColors.primaryNavy),
+                        SizedBox(width: 8),
+                        Text('Corporate Alerts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: VeluneColors.primaryNavy)),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            widget.state.markAllNotificationsRead();
+                            setSheetState(() {});
+                          },
+                          child: const Text('Mark All Read', style: TextStyle(fontSize: 12)),
+                        ),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(),
+                if (notifs.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 30),
+                    child: Center(child: Text('No active notifications', style: TextStyle(color: VeluneColors.textMuted))),
+                  )
+                else
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: notifs.length,
+                      itemBuilder: (c, idx) {
+                        final n = notifs[idx];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: n.isRead ? VeluneColors.background : VeluneColors.skyBlue.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: n.isRead ? VeluneColors.border : VeluneColors.accentBlue.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                n.type == 'esg'
+                                    ? Icons.eco
+                                    : (n.type == 'parking' ? Icons.local_parking : Icons.emergency),
+                                color: n.type == 'esg'
+                                    ? VeluneColors.success
+                                    : (n.type == 'parking' ? VeluneColors.accentBlue : VeluneColors.danger),
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(n.title, style: TextStyle(fontWeight: n.isRead ? FontWeight.w600 : FontWeight.bold, fontSize: 13)),
+                                        Text(n.time, style: const TextStyle(fontSize: 10, color: VeluneColors.textMuted)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(n.message, style: const TextStyle(fontSize: 11, color: VeluneColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: VeluneColors.textMuted),
+                                tooltip: 'Dismiss Alert',
+                                onPressed: () {
+                                  widget.state.deleteNotification(n.id);
+                                  setSheetState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -63,9 +174,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, _) {
         final state = widget.state;
         return Scaffold(
-          appBar: const VeluneAppBar(
+          appBar: VeluneAppBar(
             title: 'Amanda Jayawardena',
             subtitle: 'Head of HR & Corporate Facilities',
+            actions: [
+              IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.notifications_outlined, color: VeluneColors.primaryNavy),
+                    if (state.unreadNotificationCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(color: VeluneColors.danger, shape: BoxShape.circle),
+                          constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                          child: Text(
+                            '${state.unreadNotificationCount}',
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () => _showNotificationSheet(context),
+              ),
+            ],
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

@@ -28,11 +28,12 @@ class Co2Entry {
 
 class ParkingGroup {
   final String id;
-  final String groupName;
-  final String route;
-  final int commuters;
+  String groupName;
+  String route;
+  int commuters;
   String status; // 'Arrived', 'En-route', 'Reserved'
   String spotCode; // 'B-12', 'B-13'
+  String vehiclePlate;
 
   ParkingGroup({
     required this.id,
@@ -41,6 +42,7 @@ class ParkingGroup {
     required this.commuters,
     required this.status,
     required this.spotCode,
+    this.vehiclePlate = 'WP-CAA-4421',
   });
 }
 
@@ -109,5 +111,23 @@ class CommuteSplit {
     required this.name,
     required this.percentage,
     required this.color,
+  });
+}
+
+class HrNotification {
+  final String id;
+  final String title;
+  final String message;
+  final String time;
+  final String type; // 'esg', 'parking', 'emergency', 'reward'
+  bool isRead;
+
+  HrNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.time,
+    required this.type,
+    this.isRead = false,
   });
 }
