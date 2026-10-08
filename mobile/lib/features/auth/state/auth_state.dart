@@ -9,16 +9,8 @@ class AuthState extends ChangeNotifier {
   final bool _isLoading = false;
 
   AuthState() {
-    // Default demo authenticated state
-    _currentUser = AuthUser(
-      id: 1,
-      name: 'Jay Karunarathna',
-      email: 'jay@company.com',
-      role: 'commuter',
-      emailVerified: true,
-      idVerified: true,
-      governmentIdLast3: '821',
-    );
+    // Start unauthenticated so user sees Splash -> Real Login (HF-01) -> Corporate OTP (HF-02)
+    _currentUser = null;
   }
 
   AuthUser? get currentUser => _currentUser;

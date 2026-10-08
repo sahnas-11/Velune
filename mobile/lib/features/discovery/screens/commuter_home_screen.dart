@@ -7,6 +7,8 @@ class CommuterHomeScreen extends StatefulWidget {
   final String userName;
   final VoidCallback onFindRidePressed;
   final Function(int rideId) onRideSelected;
+  final VoidCallback? onOpenDrawer;
+  final VoidCallback? onOpenProfile;
 
   const CommuterHomeScreen({
     super.key,
@@ -14,6 +16,8 @@ class CommuterHomeScreen extends StatefulWidget {
     required this.userName,
     required this.onFindRidePressed,
     required this.onRideSelected,
+    this.onOpenDrawer,
+    this.onOpenProfile,
   });
 
   @override
@@ -50,31 +54,41 @@ class _CommuterHomeScreenState extends State<CommuterHomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: VeluneColors.primaryNavy,
-              child: Text(
-                firstName.isNotEmpty ? firstName[0] : 'J',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+        leading: widget.onOpenDrawer != null
+            ? IconButton(
+                icon: const Icon(Icons.menu, color: VeluneColors.primaryNavy),
+                tooltip: 'Explore Modules & Switch Roles',
+                onPressed: widget.onOpenDrawer,
+              )
+            : null,
+        title: GestureDetector(
+          onTap: widget.onOpenProfile,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: VeluneColors.primaryNavy,
+                child: Text(
+                  firstName.isNotEmpty ? firstName[0] : 'J',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Good Morning, $firstName',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: VeluneColors.textPrimary),
-                ),
-                const Text(
-                  'Corporate Commuter • Certified',
-                  style: TextStyle(fontSize: 10, color: VeluneColors.textSecondary),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Good Morning, $firstName',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: VeluneColors.textPrimary),
+                  ),
+                  const Text(
+                    'Corporate Commuter • Certified',
+                    style: TextStyle(fontSize: 10, color: VeluneColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(

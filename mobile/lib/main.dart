@@ -69,6 +69,8 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   // Navigation Flow State
   bool _showSplash = true;
   bool _inOtpFlow = false;
@@ -185,6 +187,27 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         activeContent = CommuterHomeScreen(
           state: _discoveryState,
           userName: _authState.currentUser?.name ?? 'Jay',
+          onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+          onOpenProfile: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileScreen(
+                  authState: _authState,
+                  onLogout: () {
+                    Navigator.pop(context);
+                    _authState.logout();
+                    setState(() {});
+                  },
+                  onSwitchRole: (newRole) {
+                    Navigator.pop(context);
+                    _authState.loginAsRole(newRole);
+                    _applyRoleHomeRoute(newRole);
+                  },
+                ),
+              ),
+            );
+          },
           onFindRidePressed: () {
             setState(() {
               _currentMainTab = 1;
@@ -224,6 +247,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     }
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: _buildDrawer(),
       body: SafeArea(child: activeContent),
       bottomNavigationBar: NavigationBar(
