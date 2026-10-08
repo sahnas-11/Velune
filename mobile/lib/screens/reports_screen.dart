@@ -3,6 +3,7 @@ import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../models/hr_models.dart';
 import '../state/hr_state.dart';
+import 'pdf_report_viewer_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   final HrState state;
@@ -39,6 +40,13 @@ class ReportsScreen extends StatelessWidget {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Generated ${titleCtrl.text}')),
+              );
+              final newlyCreated = state.monthlyReports.first;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PdfReportViewerScreen(report: newlyCreated, state: state),
+                ),
               );
             },
             child: const Text('Generate PDF', style: TextStyle(color: Colors.white)),
@@ -146,37 +154,17 @@ class ReportsScreen extends StatelessWidget {
                   backgroundColor: VeluneColors.primaryNavy,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () async {
+                onPressed: () {
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Downloading official Scope 3 audit report...')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PdfReportViewerScreen(report: report, state: state),
+                    ),
                   );
-                  final path = await state.downloadReportPdf(report);
-                  if (context.mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Row(
-                          children: [
-                            Icon(Icons.check_circle, color: VeluneColors.success),
-                            SizedBox(width: 8),
-                            Text('Report Saved!'),
-                          ],
-                        ),
-                        content: Text('Successfully downloaded:\n$path\n\nSize: ${report.fileSizeMb} MB\nScope: ${report.auditScope}'),
-                        actions: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: VeluneColors.primaryNavy),
-                            onPressed: () => Navigator.pop(c),
-                            child: const Text('OK', style: TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
                 },
-                icon: const Icon(Icons.download, color: Colors.white),
-                label: const Text('Download PDF File', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                label: const Text('Open & View Official PDF Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -253,12 +241,15 @@ class ReportsScreen extends StatelessWidget {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                                 onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Downloading ${latest.title}... Complete!')),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PdfReportViewerScreen(report: latest, state: state),
+                                    ),
                                   );
                                 },
-                                icon: const Icon(Icons.download, color: Colors.white, size: 16),
-                                label: const Text('Download', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                icon: const Icon(Icons.picture_as_pdf, color: Colors.white, size: 16),
+                                label: const Text('Download & View', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
@@ -346,57 +337,83 @@ class ReportsScreen extends StatelessWidget {
                 ...state.monthlyReports.map((report) {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: VeluneColors.border),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: VeluneColors.dangerBg,
-                                borderRadius: BorderRadius.circular(10),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PdfReportViewerScreen(report: report, state: state),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: VeluneColors.dangerBg,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.picture_as_pdf, color: VeluneColors.danger, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: VeluneColors.textPrimary)),
+                                          Text('${report.publishDate} • ${report.fileSizeMb} MB • ${report.co2SavedKg} kg CO2', style: const TextStyle(fontSize: 11, color: VeluneColors.textSecondary)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: const Icon(Icons.picture_as_pdf, color: VeluneColors.danger, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: VeluneColors.textPrimary)),
-                                Text('${report.publishDate} • ${report.fileSizeMb} MB • ${report.co2SavedKg} kg CO2', style: const TextStyle(fontSize: 11, color: VeluneColors.textSecondary)),
-                              ],
-                            ),
-                          ],
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.picture_as_pdf, size: 20, color: VeluneColors.accentBlue),
+                                    tooltip: 'View PDF Document',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => PdfReportViewerScreen(report: report, state: state),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 18, color: VeluneColors.danger),
+                                    tooltip: 'Delete Record',
+                                    onPressed: () {
+                                      state.deleteReport(report.id);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Deleted ${report.title}')),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.download, size: 18, color: VeluneColors.accentBlue),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Downloading ${report.title}... Complete!')),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: VeluneColors.danger),
-                              onPressed: () {
-                                state.deleteReport(report.id);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Deleted ${report.title}')),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 }),
