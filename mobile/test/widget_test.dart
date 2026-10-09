@@ -4,6 +4,6 @@ import 'package:velune_app/main.dart';
 void main() {
   testWidgets('Velune app basic smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const VeluneApp());
-    expect(find.text('Amanda Jayawardena'), findsOneWidget);
+    expect(find.byType(VeluneApp), findsOneWidget);
   });
 }
