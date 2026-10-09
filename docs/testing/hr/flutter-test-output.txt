@@ -1,0 +1,41 @@
+00:00 +0: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/dashboard_widget_test.dart
+00:00 +0: HR Dashboard Widget Tests TC-HR-W01: HR Dashboard renders title, KPIs, and status metrics
+00:00 +1: HR Dashboard Widget Tests TC-HR-W02: HR Dashboard notification center dismiss item deletes notification
+00:00 +2: HR Dashboard Widget Tests TC-HR-W03: HR Dashboard quick action navigation triggers callback (Dashboard -> CO2)
+00:00 +3: HR Dashboard Widget Tests TC-HR-W04: HR Dashboard edit campus target dialog opens and updates target
+00:01 +4: HR Dashboard Widget Tests TC-HR-W05: HR Dashboard empty notification state displays clean empty banner
+
+00:01 +5: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/co2_report_widget_test.dart
+00:01 +5: CO2 Reduction Report Widget Tests TC-HR-W21: CO2 Reduction Report renders avoided kg, progress bar and equivalents
+00:01 +6: CO2 Reduction Report Widget Tests TC-HR-W22: CO2 Reduction Report log entry modal validation rejects 0 kg
+00:01 +7: CO2 Reduction Report Widget Tests TC-HR-W23: CO2 Reduction Report logs new weekly carbon record
+00:01 +8: CO2 Reduction Report Widget Tests TC-HR-W24: CO2 Reduction Report download banner navigates to PDF viewer
+
+00:01 +9: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/parking_widget_test.dart
+00:01 +9: Parking Allocation Widget Tests TC-HR-W11: Parking Allocation renders Deck B bays and allocation list
+00:02 +10: Parking Allocation Widget Tests TC-HR-W12: Parking Allocation allocate spot modal validation rejects empty spot code
+00:02 +11: Parking Allocation Widget Tests TC-HR-W13: Parking Allocation allocates new carpool bay into state
+00:02 +12: Parking Allocation Widget Tests TC-HR-W14: Parking Allocation release spot deletes bay from list
+00:02 +13: Parking Allocation Widget Tests TC-HR-W15: Parking Allocation navigation callback to incentives works
+
+00:02 +14: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/statistics_widget_test.dart
+00:02 +14: Carpool Statistics Widget Tests TC-HR-W31: Carpool Statistics renders top routes, average riders, and commute splits
+00:03 +15: Carpool Statistics Widget Tests TC-HR-W32: Carpool Statistics pins new corridor route into registry
+00:03 +16: Carpool Statistics Widget Tests TC-HR-W33: Carpool Statistics unpin route removes item from top routes
+00:03 +17: Carpool Statistics Widget Tests TC-HR-W34: Carpool Statistics commute mode breakdown displays splits
+
+00:03 +18: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/reports_widget_test.dart
+00:03 +18: Monthly ESG Reports Widget Tests TC-HR-W41: Monthly Reports renders latest hero report, archive list, and preview buttons
+00:03 +19: Monthly ESG Reports Widget Tests TC-HR-W42: Monthly Reports download hero button opens PDF Report Viewer screen
+00:04 +20: Monthly ESG Reports Widget Tests TC-HR-W43: Monthly Reports generate modal creates new report entry
+00:04 +21: Monthly ESG Reports Widget Tests TC-HR-W44: Monthly Reports delete archive removes report from state
+00:04 +22: Monthly ESG Reports Widget Tests TC-HR-W45: Monthly Reports auto-email switch toggles state
+
+00:04 +23: loading C:/Users/user/Desktop/velune_carpoolapp/mobile/test/hr_corporate/incentives_widget_test.dart
+00:04 +23: Corporate Incentives Widget Tests TC-HR-W51: Corporate Incentives renders active programs and fleet leaderboard
+00:04 +24: Corporate Incentives Widget Tests TC-HR-W52: Corporate Incentives add program modal validation rejects empty title
+00:05 +25: Corporate Incentives Widget Tests TC-HR-W53: Corporate Incentives creates new incentive program into state
+00:05 +26: Corporate Incentives Widget Tests TC-HR-W54: Corporate Incentives delete program removes item from state
+00:05 +27: Corporate Incentives Widget Tests TC-HR-W55: Corporate Incentives toggle pause/resume updates program status
+
+00:05 +28: All tests passed!

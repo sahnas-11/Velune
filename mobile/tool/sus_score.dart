@@ -38,6 +38,7 @@ void main(List<String> args) {
   for (int i = 1; i < lines.length; i++) {
     final parts = lines[i].split(',').map((s) => s.trim()).toList();
     if (parts.length < 11) continue;
+    if (parts[1].isEmpty) continue;
 
     final participantId = parts[0];
     final scores = <int>[];

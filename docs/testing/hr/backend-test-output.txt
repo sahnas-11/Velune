@@ -1,0 +1,53 @@
+   PASS  Tests\Feature\Hr\Co2ReportTest
+  ✓ co2 report unauthenticated guest is blocked
+  ✓ commuter role cannot access co2 endpoints
+  ✓ hr can view co2 summary with aggregates and zero pii
+  ✓ hr can log weekly co2 savings record
+  ✓ co2 record validation rejects non positive kg
+
+   PASS  Tests\Feature\Hr\DashboardTest
+  ✓ dashboard unauthenticated guest is blocked
+  ✓ commuter role cannot access hr dashboard
+  ✓ mechanic role cannot access hr dashboard
+  ✓ hr can view mobility dashboard metrics
+  ✓ hr can update campus decarbonization target
+  ✓ campus target validation rejects out of range percentage
+  ✓ hr can dismiss corporate alert notification
+  ✓ nfr 04 commuter anonymity verified on dashboard payload
+
+   PASS  Tests\Feature\Hr\IncentivesTest
+  ✓ incentives unauthenticated guest is blocked
+  ✓ commuter role cannot access incentives endpoints
+  ✓ hr can view active corporate incentive programs
+  ✓ hr can create new incentive program
+  ✓ incentive creation validation requires positive budget
+  ✓ hr can update incentive terms and budget
+  ✓ hr can toggle incentive active status
+  ✓ hr can delete decommissioned incentive
+
+   PASS  Tests\Feature\Hr\MonthlyReportTest
+  ✓ monthly reports unauthenticated guest is blocked
+  ✓ commuter role cannot access monthly reports
+  ✓ hr can view monthly esg audit history
+  ✓ hr can generate new monthly audit report
+  ✓ hr can export esg audit report as pdf binary stream
+  ✓ hr can delete archived report
+
+   PASS  Tests\Feature\Hr\ParkingAllocationTest
+  ✓ parking unauthenticated guest is blocked
+  ✓ commuter role cannot access parking allocation endpoints
+  ✓ hr can view deck b parking bay allocations
+  ✓ hr can allocate priority spot to carpool cohort
+  ✓ parking allocation rejects duplicate spot code
+  ✓ hr can reassign allocated spot to different bay
+  ✓ hr can release priority parking spot
+
+   PASS  Tests\Feature\Hr\StatisticsTest
+  ✓ statistics unauthenticated guest is blocked
+  ✓ commuter role cannot access statistics endpoints
+  ✓ hr can view commute modal split breakdown
+  ✓ hr can pin top performing corridor route
+  ✓ hr can unpin corridor route
+
+  Tests:    32 passed (128 assertions)
+  Duration: 9.51s
