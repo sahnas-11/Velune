@@ -154,27 +154,32 @@ class _PdfReportViewerScreenState extends State<PdfReportViewerScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: VeluneColors.primaryNavy,
-                                  borderRadius: BorderRadius.circular(8),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: VeluneColors.primaryNavy,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.directions_car_filled, color: Colors.white, size: 20),
                                 ),
-                                child: const Icon(Icons.directions_car_filled, color: Colors.white, size: 20),
-                              ),
-                              const SizedBox(width: 10),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('VELUNE PLATFORM', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.2, color: VeluneColors.primaryNavy)),
-                                  Text('Corporate Sustainability Division', style: TextStyle(fontSize: 9, color: VeluneColors.textSecondary)),
-                                ],
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                const Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('VELUNE PLATFORM', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.2, color: VeluneColors.primaryNavy), overflow: TextOverflow.ellipsis),
+                                      Text('Corporate Sustainability Division', style: TextStyle(fontSize: 9, color: VeluneColors.textSecondary), overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
@@ -345,7 +350,10 @@ class _PdfReportViewerScreenState extends State<PdfReportViewerScreen> {
                                   const Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Signed: Amanda Jayawardena', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, fontStyle: FontStyle.italic)),
+                                      Flexible(
+                                        child: Text('Signed: Amanda Jayawardena', overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, fontStyle: FontStyle.italic)),
+                                      ),
+                                      SizedBox(width: 8),
                                       Text('REF: ISO-GHG-2026-LK', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 9, color: VeluneColors.textMuted)),
                                     ],
                                   ),
@@ -397,7 +405,10 @@ class _PdfReportViewerScreenState extends State<PdfReportViewerScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: VeluneColors.textSecondary)),
-          Text(value, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textPrimary)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(value, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: VeluneColors.textPrimary)),
+          ),
         ],
       ),
     );
