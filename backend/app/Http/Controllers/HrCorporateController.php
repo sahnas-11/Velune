@@ -212,10 +212,11 @@ class HrCorporateController extends Controller
     // ESG Export
     public function exportReport()
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Velune_Scope3_ESG_Report_Q4_2026.pdf prepared and verified with SHA-256 corporate stamp',
-            'download_url' => 'https://velune.lk/esg/reports/2026-q4.pdf',
+        $pdfContent = "%PDF-1.4\n1 0 obj\n<< /Title (Velune Scope 3 ESG Audit Q4 2026) /Author (Amanda Jayawardena) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+
+        return response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="Velune_Scope3_ESG_Report_Q4_2026.pdf"',
         ]);
     }
 

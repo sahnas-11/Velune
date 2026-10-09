@@ -115,7 +115,7 @@ Route::prefix('emergency')->group(function () {
 // ==========================================
 // === HR Corporate & System Integration   ===
 // ==========================================
-Route::prefix('hr')->group(function () {
+Route::prefix('hr')->middleware(['auth:sanctum', 'role.hr'])->group(function () {
     Route::get('/dashboard', [HrCorporateController::class, 'getDashboard']);
     Route::put('/goals/{id}', [HrCorporateController::class, 'updateGoal']);
 
