@@ -542,7 +542,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: (_commuterTab == 3 && (_commuterEmergencyStep == 0 || _commuterEmergencyStep == 1))
+      bottomNavigationBar: (_commuterTab == 3 && (_commuterEmergencyStep == 0 || _commuterEmergencyStep == 1 || _commuterEmergencyStep == 2))
           ? null
           : NavigationBar(
               selectedIndex: _commuterTab,
@@ -686,6 +686,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         return HelpRequestedScreen(
           state: _emergencyState,
           onIncidentClosed: () => setState(() => _commuterEmergencyStep = 0),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
     }
   }
