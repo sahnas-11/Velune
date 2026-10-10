@@ -542,7 +542,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: (_commuterTab == 3 && _commuterEmergencyStep == 0)
+      bottomNavigationBar: (_commuterTab == 3 && (_commuterEmergencyStep == 0 || _commuterEmergencyStep == 1))
           ? null
           : NavigationBar(
               selectedIndex: _commuterTab,
@@ -678,6 +678,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         return EmergencyBreakdownScreen(
           state: _emergencyState,
           onMechanicRequested: () => setState(() => _commuterEmergencyStep = 2),
+          onBack: () => setState(() => _commuterEmergencyStep = 0),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
       case 2:
       default:
