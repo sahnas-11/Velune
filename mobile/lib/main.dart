@@ -542,8 +542,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _commuterTab,
+      bottomNavigationBar: (_commuterTab == 3 && _commuterEmergencyStep == 0)
+          ? null
+          : NavigationBar(
+              selectedIndex: _commuterTab,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VeluneColors.skyBlue,
@@ -670,6 +672,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         return ActiveRideScreen(
           state: _emergencyState,
           onRequestEmergency: () => setState(() => _commuterEmergencyStep = 1),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
       case 1:
         return EmergencyBreakdownScreen(
