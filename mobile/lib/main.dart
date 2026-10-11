@@ -360,6 +360,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _mechanicTab = 1; // Transition to detailed triage & diagnostics
             });
           },
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
         );
         break;
 
@@ -374,7 +375,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             });
           },
           onBack: () => setState(() => _mechanicTab = 0),
-          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
         );
         break;
 
@@ -400,7 +401,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: (_mechanicTab == 1)
+      bottomNavigationBar: (_mechanicTab == 0 || _mechanicTab == 1)
           ? null
           : NavigationBar(
               selectedIndex: _mechanicTab,
