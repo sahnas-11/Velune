@@ -389,6 +389,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _selectedIncident = null;
             });
           },
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
+          onBack: () => setState(() => _mechanicTab = 0),
         );
         break;
 
@@ -401,7 +403,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: (_mechanicTab == 0 || _mechanicTab == 1)
+      bottomNavigationBar: (_mechanicTab == 0 || _mechanicTab == 1 || _mechanicTab == 2)
           ? null
           : NavigationBar(
               selectedIndex: _mechanicTab,
