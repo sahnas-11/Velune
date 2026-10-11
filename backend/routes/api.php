@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureCorporateVerified;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
@@ -60,7 +62,7 @@ Route::put('/notifications/read', [DiscoveryRidesController::class, 'markNotific
 // ==========================================
 Route::prefix('booking')->group(function () {
     Route::get('/bookings', [BookingController::class, 'getBookings']);
-    Route::post('/bookings', [BookingController::class, 'createBooking']);
+    Route::post('/bookings', [BookingController::class, 'createBooking'])->middleware(['auth:sanctum', EnsureCorporateVerified::class]);
     Route::put('/bookings/{id}', [BookingController::class, 'updateBooking']);
     Route::delete('/bookings/{id}', [BookingController::class, 'cancelBooking']);
 

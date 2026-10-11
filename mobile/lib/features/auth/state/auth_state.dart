@@ -125,6 +125,11 @@ class AuthState extends ChangeNotifier {
   }) {
     final cleanEmail = email.trim().toLowerCase();
 
+    // Enforce corporate domain validation (TC-AUTH-01)
+    if (!cleanEmail.endsWith('@company.com') && !cleanEmail.endsWith('@velune.lk')) {
+      return false;
+    }
+
     // Check if email already registered
     if (_users.any((u) => u.email.toLowerCase() == cleanEmail)) {
       return false;
@@ -224,7 +229,7 @@ class AuthState extends ChangeNotifier {
 
   /// Verify Corporate OTP
   bool verifyOtp(String code) {
-    if (code == '4821' || code.length == 4) {
+    if (code == _debugOtp || code == '4821') {
       final cleanEmail = _currentChallengeEmail.trim().toLowerCase();
       final existing = _users.firstWhere(
         (u) => u.email.toLowerCase() == cleanEmail,
