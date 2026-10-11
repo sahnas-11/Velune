@@ -360,6 +360,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _mechanicTab = 1; // Transition to detailed triage & diagnostics
             });
           },
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
         );
         break;
 
@@ -373,6 +374,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _mechanicTab = 2; // Transition to active dispatch tracker
             });
           },
+          onBack: () => setState(() => _mechanicTab = 0),
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
         );
         break;
 
@@ -386,6 +389,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _selectedIncident = null;
             });
           },
+          onNavigateTab: (tabIndex) => setState(() => _mechanicTab = tabIndex),
+          onBack: () => setState(() => _mechanicTab = 0),
         );
         break;
 
@@ -398,8 +403,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _mechanicTab,
+      bottomNavigationBar: (_mechanicTab == 0 || _mechanicTab == 1 || _mechanicTab == 2)
+          ? null
+          : NavigationBar(
+              selectedIndex: _mechanicTab,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VeluneColors.warningBg,
@@ -542,8 +549,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _commuterTab,
+      bottomNavigationBar: (_commuterTab == 3 && (_commuterEmergencyStep == 0 || _commuterEmergencyStep == 1 || _commuterEmergencyStep == 2))
+          ? null
+          : NavigationBar(
+              selectedIndex: _commuterTab,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VeluneColors.skyBlue,
@@ -670,17 +679,21 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         return ActiveRideScreen(
           state: _emergencyState,
           onRequestEmergency: () => setState(() => _commuterEmergencyStep = 1),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
       case 1:
         return EmergencyBreakdownScreen(
           state: _emergencyState,
           onMechanicRequested: () => setState(() => _commuterEmergencyStep = 2),
+          onBack: () => setState(() => _commuterEmergencyStep = 0),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
       case 2:
       default:
         return HelpRequestedScreen(
           state: _emergencyState,
           onIncidentClosed: () => setState(() => _commuterEmergencyStep = 0),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
     }
   }

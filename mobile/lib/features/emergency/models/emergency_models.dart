@@ -37,6 +37,7 @@ class EmergencyIncident {
   String issueType;
   String description;
   String reporterName;
+  String reporterPhone;
   String assignedMechanic;
   String mechanicPhone;
   double mechanicRating;
@@ -58,6 +59,7 @@ class EmergencyIncident {
     required this.issueType,
     required this.description,
     required this.reporterName,
+    this.reporterPhone = '+94 77 123 4567',
     required this.assignedMechanic,
     required this.mechanicPhone,
     required this.mechanicRating,

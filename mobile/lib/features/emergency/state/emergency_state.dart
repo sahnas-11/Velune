@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import '../models/emergency_models.dart';
 
+/// User Role Enum to support role-based state management
+enum UserRole {
+  commuter,
+  mechanic,
+}
+
 class EmergencyState extends ChangeNotifier {
-  // Current Active Ride (Commuter view)
+  // === Role-Based State Management ===
+  UserRole _currentRole = UserRole.commuter;
+
+  UserRole get currentRole => _currentRole;
+  bool get isCommuter => _currentRole == UserRole.commuter;
+  bool get isMechanic => _currentRole == UserRole.mechanic;
+
+  void setRole(UserRole role) {
+    if (_currentRole != role) {
+      _currentRole = role;
+      notifyListeners();
+    }
+  }
+
+  void switchRole() {
+    _currentRole = isCommuter ? UserRole.mechanic : UserRole.commuter;
+    notifyListeners();
+  }
+
+  // === Current Active Ride (Commuter View) ===
   ActiveRide activeRide = ActiveRide(
     id: 'RD-4402',
     routeName: 'Southern Expressway Corridor (E01)',
@@ -17,7 +42,7 @@ class EmergencyState extends ChangeNotifier {
     isRouteShared: true,
   );
 
-  // Active Incident
+  // === Active Emergency Incident ===
   EmergencyIncident currentIncident = EmergencyIncident(
     id: 'EM-9042',
     status: 'En Route', // 'Pending', 'Accepted', 'En Route', 'Arrived', 'Resolved'
@@ -40,67 +65,82 @@ class EmergencyState extends ChangeNotifier {
     reportedAt: '08:42 AM',
   );
 
-  // Mechanic Job Queue List
+  // === Mechanic Job Queue List ===
   final List<EmergencyIncident> queue = [
     EmergencyIncident(
       id: 'EM-9042',
-      status: 'En Route',
+      status: 'Pending',
       priority: 'Critical Priority',
-      locationText: 'Southern Expressway, KM 74.2',
-      kmMarker: 'KM 74.2 Southbound',
-      vehiclePlate: 'WP CAB-8492',
-      vehicleModel: 'Toyota Prius Hybrid',
-      issueType: 'EV/Battery',
-      description: 'Hybrid propulsion loss on expressway shoulder.',
+      locationText: 'Colombo-Kottawa Highway (Exit Bay 03)',
+      kmMarker: 'KM 14.8 Highway',
+      vehiclePlate: 'WP CAH-5521',
+      vehicleModel: 'Toyota Axio • White',
+      issueType: 'Radiator overheating',
+      description: 'Radiator overheating / Engine stall on shoulder',
       reporterName: 'Kaveen Perera',
+      reporterPhone: '+94 77 123 4567',
       assignedMechanic: 'Nalin Silva',
       mechanicPhone: '077-***9842',
       mechanicRating: 4.9,
       etaMinutes: 8,
       distanceKm: 4.2,
-      reportedAt: '3m ago',
+      reportedAt: '2 mins ago',
     ),
     EmergencyIncident(
       id: 'EM-8821',
       status: 'Pending',
       priority: 'Roadside Assist',
-      locationText: 'Kottawa Interchange Exit 2',
+      locationText: 'Malabe Road (Near IT Tech Corridor)',
       kmMarker: 'KM 2.1 Ramp',
-      vehiclePlate: 'WP CAD-1102',
-      vehicleModel: 'Nissan Leaf EV',
+      vehiclePlate: 'WP CAY-8910',
+      vehicleModel: 'Honda Vezel • Pearl',
       issueType: 'Flat Tire',
-      description: 'Right rear tire puncture during ramp ascent.',
+      description: 'Flat tyre / Rim pressure failure',
       reporterName: 'Priya Fernando',
+      reporterPhone: '+94 71 987 6543',
       assignedMechanic: 'Unassigned',
       mechanicPhone: '',
       mechanicRating: 0.0,
       etaMinutes: 15,
       distanceKm: 8.5,
-      reportedAt: '7m ago',
+      reportedAt: '8 mins ago',
     ),
     EmergencyIncident(
       id: 'EM-7419',
-      status: 'Accepted',
-      priority: 'Patrol',
-      locationText: 'Dodangoda Service Plaza',
+      status: 'Dispatched',
+      priority: 'Patrol En Route',
+      locationText: 'Kadawatha Expressway Interchange',
       kmMarker: 'KM 34.0',
       vehiclePlate: 'WP CAC-6629',
-      vehicleModel: 'Honda Grace Hybrid',
-      issueType: 'Overheating',
-      description: 'Coolant warning light flashing at service parking.',
-      reporterName: 'Rohan Jayathilake',
-      assignedMechanic: 'Nalin Silva',
+      vehicleModel: 'Suzuki Wagon R • Silver',
+      issueType: 'EV/Battery',
+      description: 'Battery drain / Jump-start required',
+      reporterName: 'Rohan Jayatilleke',
+      reporterPhone: '+94 70 445 8899',
+      assignedMechanic: 'Unit 04',
       mechanicPhone: '077-***9842',
       mechanicRating: 4.9,
-      etaMinutes: 20,
-      distanceKm: 14.0,
-      reportedAt: '12m ago',
+      etaMinutes: 4,
+      distanceKm: 3.2,
+      reportedAt: '14 mins ago',
     ),
   ];
 
-  // === CRUD Operations ===
+  // === Role-Specific Getters ===
+  List<EmergencyIncident> get pendingQueue =>
+      queue.where((i) => i.status == 'Pending').toList();
 
-  // 1. Commuter CRUD
+  List<EmergencyIncident> get activeMechanicJobs =>
+      queue.where((i) => i.status == 'Accepted' || i.status == 'En Route' || i.status == 'Arrived').toList();
+
+  List<EmergencyIncident> get assignedToCurrentMechanic =>
+      queue.where((i) => i.assignedMechanic.contains('Nalin Silva') || i.assignedMechanic.contains('(You)')).toList();
+
+  int get pendingCount => queue.where((i) => i.status == 'Pending').length;
+  int get activeCount => queue.where((i) => i.status == 'En Route' || i.status == 'Accepted').length;
+  int get resolvedCount => queue.where((i) => i.status == 'Resolved').length;
+
+  // === 1. Commuter Flow CRUD ===
   void toggleRouteSharing(bool shared) {
     activeRide.isRouteShared = shared;
     notifyListeners();
@@ -121,7 +161,7 @@ class EmergencyState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 2. Mechanic CRUD
+  // === 2. Mechanic Flow CRUD ===
   void acceptIncident(String id) {
     final idx = queue.indexWhere((i) => i.id == id);
     if (idx != -1) {
