@@ -373,6 +373,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               _mechanicTab = 2; // Transition to active dispatch tracker
             });
           },
+          onBack: () => setState(() => _mechanicTab = 0),
+          onNavigateTab: (tabIndex) => setState(() => _commuterTab = tabIndex),
         );
         break;
 
@@ -398,8 +400,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
     return Scaffold(
       body: SafeArea(child: activeContent),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _mechanicTab,
+      bottomNavigationBar: (_mechanicTab == 1)
+          ? null
+          : NavigationBar(
+              selectedIndex: _mechanicTab,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         indicatorColor: VeluneColors.warningBg,

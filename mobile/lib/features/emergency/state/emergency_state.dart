@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import '../models/emergency_models.dart';
 
+/// User Role Enum to support role-based state management
+enum UserRole {
+  commuter,
+  mechanic,
+}
+
 class EmergencyState extends ChangeNotifier {
-  // Current Active Ride (Commuter view)
+  // === Role-Based State Management ===
+  UserRole _currentRole = UserRole.commuter;
+
+  UserRole get currentRole => _currentRole;
+  bool get isCommuter => _currentRole == UserRole.commuter;
+  bool get isMechanic => _currentRole == UserRole.mechanic;
+
+  void setRole(UserRole role) {
+    if (_currentRole != role) {
+      _currentRole = role;
+      notifyListeners();
+    }
+  }
+
+  void switchRole() {
+    _currentRole = isCommuter ? UserRole.mechanic : UserRole.commuter;
+    notifyListeners();
+  }
+
+  // === Current Active Ride (Commuter View) ===
   ActiveRide activeRide = ActiveRide(
     id: 'RD-4402',
     routeName: 'Southern Expressway Corridor (E01)',
@@ -17,7 +42,7 @@ class EmergencyState extends ChangeNotifier {
     isRouteShared: true,
   );
 
-  // Active Incident
+  // === Active Emergency Incident ===
   EmergencyIncident currentIncident = EmergencyIncident(
     id: 'EM-9042',
     status: 'En Route', // 'Pending', 'Accepted', 'En Route', 'Arrived', 'Resolved'
@@ -40,7 +65,7 @@ class EmergencyState extends ChangeNotifier {
     reportedAt: '08:42 AM',
   );
 
-  // Mechanic Job Queue List
+  // === Mechanic Job Queue List ===
   final List<EmergencyIncident> queue = [
     EmergencyIncident(
       id: 'EM-9042',
@@ -98,9 +123,21 @@ class EmergencyState extends ChangeNotifier {
     ),
   ];
 
-  // === CRUD Operations ===
+  // === Role-Specific Getters ===
+  List<EmergencyIncident> get pendingQueue =>
+      queue.where((i) => i.status == 'Pending').toList();
 
-  // 1. Commuter CRUD
+  List<EmergencyIncident> get activeMechanicJobs =>
+      queue.where((i) => i.status == 'Accepted' || i.status == 'En Route' || i.status == 'Arrived').toList();
+
+  List<EmergencyIncident> get assignedToCurrentMechanic =>
+      queue.where((i) => i.assignedMechanic.contains('Nalin Silva') || i.assignedMechanic.contains('(You)')).toList();
+
+  int get pendingCount => queue.where((i) => i.status == 'Pending').length;
+  int get activeCount => queue.where((i) => i.status == 'En Route' || i.status == 'Accepted').length;
+  int get resolvedCount => queue.where((i) => i.status == 'Resolved').length;
+
+  // === 1. Commuter Flow CRUD ===
   void toggleRouteSharing(bool shared) {
     activeRide.isRouteShared = shared;
     notifyListeners();
@@ -121,7 +158,7 @@ class EmergencyState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 2. Mechanic CRUD
+  // === 2. Mechanic Flow CRUD ===
   void acceptIncident(String id) {
     final idx = queue.indexWhere((i) => i.id == id);
     if (idx != -1) {
